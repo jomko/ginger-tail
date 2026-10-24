@@ -70,6 +70,36 @@ See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.m
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
+## First shared engine module
+
+`ginger-tail/history-context` is the first reusable implementation being
+adopted by the private reference agent. It bounds serialized observations and
+distinguishes **full visibility** from **truncated or omitted context**.
+
+The export keeps the established resident semantics:
+`HISTORY_BUDGET`, `READ_ITEM_BUDGET`, `SEARCH_ITEM_BUDGET`,
+`boundedReadItem`, `boundedSearchItem`, and `renderHistory`.
+It makes no network calls and reads or writes no agent state.
+
+```js
+import { boundedReadItem, renderHistory } from 'ginger-tail/history-context'
+
+const action = { action: 'read_post', postId: 42 }
+const thread = {
+  post: { id: 42, title: 'Synthetic thread', content: 'Observed text.', comments: 0 },
+  comments: [],
+}
+const { item } = boundedReadItem(action, thread)
+const displayed = renderHistory([item])
+console.log(displayed.visible.has(item)) // true
+```
+
+The public source originates from the reference agent's *generic context
+budget implementation*, not from its private identity, memories, model
+credentials, runtime logs, or social data. The private agent will consume
+this module through a **commit-pinned dependency** only after host tests.
+No second agent, scheduler or production cognition loop is introduced.
+
 ## Scope
 
 Planned engine capabilities:
