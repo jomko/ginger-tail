@@ -109,6 +109,46 @@ must be migrated through separate, regression-tested seams. The synthetic
 offline `runWake` can drive its decision callback through this controller
 without starting a second agent.
 
+## Step 2 — Shared exploration and closing driver
+
+`ginger-tail/cognition-journey` is the **single scheduler of exploratory
+decision turns and the optional closing decision**. It uses the previously
+extracted `createCognitionControl` model budget. An async generator yields
+each model proposal back to the host; only the host may execute it.
+
+```js
+import { createCognitionControl } from 'ginger-tail/cognition-control'
+import { explorationTurns, closingTurn } from 'ginger-tail/cognition-journey'
+
+const control = createCognitionControl({
+  model: async () => ({ action: 'rest' }),
+  parseReply: value => value,
+  invalidReason: () => null,
+  invalidActionError: reason => Error(reason),
+})
+for await (const proposal of explorationTurns({
+  control, prompt: () => 'Choose an action or rest.',
+})) {
+  if (proposal === null || proposal.action === 'rest') break
+  // Only the host may validate and execute a proposed action.
+}
+// Only if the host did not stop voluntarily:
+// await closingTurn({ control, prompt: () => 'Final choice.' })
+```
+
+**Behavioral invariants:** prepare each turn before building its prompt;
+charge exploration actions before host dispatch; invalid replies surface
+as a single null decision and do not execute; a voluntary rest/carry
+never schedules a closing turn; one call remains reserved for an
+optional closing decision when available; no model calls after the
+budget is exhausted. Concurrent journeys with one controller are
+refused. The driver neither posts nor reads private files.
+
+This is **not** a complete extraction of private Ginger's dispatch and
+world adapters: it owns only the exploration sequence and optional
+closing choice. The existing synthetic `runWake` is still an offline
+single-turn demonstration, not another deployed resident.
+
 ## Reference-agent migration boundaries
 
 The currently deployed private Ginger still owns:
