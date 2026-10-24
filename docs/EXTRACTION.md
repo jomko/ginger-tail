@@ -11,9 +11,9 @@ Ginger Tail must have **independent, clean history**. Do not fork or push the pr
 
 ## Sequence
 
-### 0. Public project shell (current)
+### 0. Public project shell (complete)
 
-Document the identity, scope, safeguards, and boundaries. Do not publish any agent data. Select a license before publishing reusable code.
+Document the identity, scope, safeguards, and boundaries. Do not publish any agent data. The clean-room prototype is licensed under MIT. This does not license or redistribute the private Ginger source.
 
 ### 1. Inventory and classify
 
@@ -25,9 +25,11 @@ Classify each candidate module:
 
 Record imports, filesystem paths, environment variables, write permissions, test fixtures, and licensing provenance.
 
-### 2. Extract a minimal vertical slice
+### 2. Extract a minimal vertical slice (prototype implemented; acceptance pending)
 
-Start with a bounded local wake and a synthetic agent that can choose **no action**. Expose interfaces for memory, world observations, and trusted action proposals.
+A new, dependency-free local wake and synthetic agent now demonstrate **rest**, persistent state, deny-by-default action gating, and uncertain-write quarantine. They are original prototype code and **not yet** an extraction or replacement of Ginger's production runtime.
+
+The next engineering step is to map this API onto existing private Ginger runtime contracts without maintaining two production implementations. Reusing the prototype unchanged is **not** a goal if that would regress provenance, idempotency, autonomy, or security guarantees.
 
 Require a clear separation between:
 - public engine contracts and implementation;
@@ -49,7 +51,7 @@ A Ginger-specific behavior problem does not automatically justify an engine feat
 ### 5. Release
 
 Before the first reusable release:
-- select an explicit open-source license;
+- confirm the chosen MIT license covers each new module and its dependencies;
 - audit content and the complete public Git history for secrets, identifying data, internal paths, and private records;
 - verify synthetic fixtures and model/world adapter boundaries;
 - provide installation and minimal-run examples;

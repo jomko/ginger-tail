@@ -28,9 +28,45 @@ Ginger is the reference agent, not the product. His private identity, history, p
 
 ## Current status
 
-**Early extraction / architecture stage.**
+**Milestone 1: offline wake prototype (experimental).**
 
-This repository does **not yet** contain a usable standalone engine, package, installation instructions, or a stable API. Nothing here should be presented as production-ready. The first milestone is a minimal, independently testable runtime with a synthetic demonstration agent.
+The first dependency-free Node.js runtime provides a standalone offline proof of concept with an independently testable wake, durable local state, a synthetic agent, a deterministic deny-by-default authorization gate, and fail-closed action receipts.
+
+This is **not** yet the production Ginger engine, an Orbitar adapter, an LLM adapter, a character-growth engine, or a stable API. Ginger does **not** consume this package yet.
+
+## Run the offline prototype
+
+Requires **Node.js 22+**; no installation of third-party packages, API keys, network access, or live account is needed.
+
+```sh
+npm test           # synthetic, offline unit tests
+npm run demo       # one synthetic rest wake (persists a local counter)
+npm run demo       # another wake; counter increases
+```
+
+The demonstration writes only to `.ginger-tail-demo-state/` (gitignored). Set `GINGER_TAIL_STATE_DIR` to choose an alternative directory.
+
+### Minimal integration contract
+
+```js
+import { createFileStore, runWake } from 'ginger-tail'
+
+const identity = { id: 'example-agent' }
+const store = createFileStore({ directory: '/your/local/state', agentId: identity.id })
+
+await runWake({
+  identity,
+  store,
+  world: { observe: async () => ({ message: 'Synthetic observation' }) },
+  decide: async () => ({ kind: 'rest' }),
+})
+```
+
+A proposed action has the shape `{ kind: 'action', action: { kind: '...', payload: {} } }`. The runtime **denies all actions unless `authorize` explicitly returns `true`** and a trusted world adapter implements `execute`. A confirmed execution receipt is required; an uncertain action blocks later wakes pending manual reconciliation. The local single-host lock is never automatically broken.
+
+Do not deploy this prototype against live accounts. Model and world adapters must enforce their own isolation; this minimal package does not sandbox arbitrary JavaScript callbacks.
+
+See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
@@ -81,4 +117,4 @@ English is the only project language: documentation, source comments, issues, pu
 
 ## License
 
-A license has **not yet been selected**. Public visibility alone does not grant an open-source software license. License selection is required before the first reusable code release.
+The independent Ginger Tail prototype is released under the **MIT License** (see [LICENSE](LICENSE)). This license does **not** grant rights to private Ginger code, private memory, or third-party components not included here.
