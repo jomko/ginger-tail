@@ -68,6 +68,17 @@ Do not deploy this prototype against live accounts. Model and world adapters mus
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
+## Resident cognition control
+
+The reusable model-turn controller (`ginger-tail/cognition-control`) now
+budgets exploration, retries invalid replies once per wake, reserves a
+closing decision and accepts voluntary rest. The model, action parser
+and recovery note remain supplied by the agent.
+
+This is the **first shared seam** of the cognition loop, not a second
+agent and not a replacement for Ginger's trusted world actions.
+See [Runtime Contracts](docs/CONTRACTS.md).
+
 ## Runtime Contracts v1
 
 The existing offline wake now consumes executable public boundary contracts

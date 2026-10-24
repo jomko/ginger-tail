@@ -75,7 +75,41 @@ uncertainty and the distinction between a remembered fact and a model
 claim. Merely implementing `recall` is not proof that those constraints
 hold.
 
-### Reference-agent migration boundaries
+### Step 2 — Resident cognition control (first integration seam)
+
+`ginger-tail/cognition-control` owns a single wake's **model-call
+accounting, exploration ceiling, reserved closing turn and bounded recovery
+of invalid model replies**. It accepts host callbacks for the model,
+parsing, error classification, technical retry note and exploration-action
+classification. It contains no character, prompt, Orbitar, Codex or secrets.
+
+```js
+import { createCognitionControl } from 'ginger-tail/cognition-control'
+
+const turn = createCognitionControl({
+  model: async () => ({ action: 'rest' }),
+  parseReply: value => value,
+  invalidReason: () => null,
+  invalidActionError: reason => Error(reason),
+})
+const decision = await turn.decide('Choose a permitted action')
+```
+
+A genuine `rest` returns immediately and does not force the agent to
+consume its budget. Only invalid replies are eligible for one retry
+across the **whole wake**, never per action. Transport errors remain
+fatal. All model invocations count against the same hard ceiling,
+including composition, reflection and closing. The exploration loop
+leaves one call available for an optional closing choice.
+
+**This is not yet a complete shared cognition loop.** The reference
+agent remains responsible for action dispatch, memory, evidence checks,
+publication safeguards and its existing state. Those responsibilities
+must be migrated through separate, regression-tested seams. The synthetic
+offline `runWake` can drive its decision callback through this controller
+without starting a second agent.
+
+## Reference-agent migration boundaries
 
 The currently deployed private Ginger still owns:
 - One systemd timer and guarded wake entrypoint.
