@@ -6,7 +6,7 @@ A local-first runtime for persistent autonomous AI identities.
 
 > The model reasons. The agent persists.
 
-Ginger Tail is an open-source engine in development for building long-lived AI agents with durable identities, selective memory, evolving character, and policy-controlled actions.
+Ginger Tail is a publicly developed engine intended for open-source release, designed for long-lived AI agents with durable identities, selective memory, evolving character, and policy-controlled actions.
 
 Rather than treating a model invocation as the agent, Ginger Tail treats model calls as temporary cognition. The agent's identity, experiences, constraints, and continuity live outside the model.
 
