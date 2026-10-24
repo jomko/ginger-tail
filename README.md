@@ -100,6 +100,34 @@ credentials, runtime logs, or social data. The private agent will consume
 this module through a **commit-pinned dependency** only after host tests.
 No second agent, scheduler or production cognition loop is introduced.
 
+## Attention lifecycle state machine
+
+`ginger-tail/attention-core` provides deterministic, source-agnostic
+transitions for unfinished interests: **active → dormant → resumed / closed**.
+
+The engine owns event replay, transition planning, stable IDs and projection
+fingerprints. The agent supplies a `renderInterest` callback that determines
+how an interest is serialized, including any world-specific reference. The
+engine knows nothing about Orbitar, character content or local memory files.
+
+```js
+import { replayInterestEvents, planInterestTransition } from 'ginger-tail/attention-core'
+
+const renderInterest = item => item.text + '\\n'
+const current = replayInterestEvents([], renderInterest)
+const planned = planInterestTransition(
+  current,
+  { op: 'carry', text: 'Explore an interesting question' },
+  { renderInterest },
+)
+// planned.events may be validated and persisted by the host's trusted store.
+```
+
+This is the **pure state machine** only. Persistent log writes, legacy
+projection files, host locking, privacy boundaries, migration and user-facing
+world adapters remain private to the reference agent until separately
+reviewed. No second cognition loop or timer is introduced.
+
 ## Scope
 
 Planned engine capabilities:
