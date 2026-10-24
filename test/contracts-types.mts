@@ -8,7 +8,16 @@ import {
   type MemoryPort, type ModelPort, type WakeDecision,
 } from 'ginger-tail/contracts'
 
+import { createCognitionControl, type CognitionControl } from 'ginger-tail/cognition-control'
+
 function typecheckOnly(): void {
+const controller: CognitionControl<{action: string}, {action: string}> = createCognitionControl({
+  model: async () => ({ action: 'rest' }),
+  parseReply: reply => reply,
+  invalidReason: () => null,
+  invalidActionError: reason => Error(reason),
+})
+void controller.decide('Synthetic choice')
 const identity: AgentIdentity = { id: 'synthetic-cat' }
 const store = createFileStore({ directory: '/tmp/synthetic-only', agentId: identity.id })
 const world: WorldPort = { observe: async ({ identity }) => ({ from: identity.id }) }
