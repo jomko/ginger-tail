@@ -31,3 +31,6 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# Synthetic offline example state
+.ginger-tail-demo-state/
