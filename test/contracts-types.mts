@@ -8,6 +8,7 @@ import {
   type MemoryPort, type ModelPort, type WakeDecision,
 } from 'ginger-tail/contracts'
 
+function typecheckOnly(): void {
 const identity: AgentIdentity = { id: 'synthetic-cat' }
 const store = createFileStore({ directory: '/tmp/synthetic-only', agentId: identity.id })
 const world: WorldPort = { observe: async ({ identity }) => ({ from: identity.id }) }
@@ -25,3 +26,5 @@ const version: number = WAKE_CONTRACT_VERSION
 const receiptIsValid: boolean = isConfirmedActionReceipt({ status: 'confirmed', receiptId: 'synthetic' })
 
 void [result, decision, model, memory, version, receiptIsValid]
+}
+void typecheckOnly
