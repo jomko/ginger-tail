@@ -32,7 +32,7 @@ Ginger is the reference agent, not the product. His private identity, history, p
 
 The first dependency-free Node.js runtime provides a standalone offline proof of concept with an independently testable wake, durable local state, a synthetic agent, a deterministic deny-by-default authorization gate, and fail-closed action receipts.
 
-This is **not** yet the production Ginger engine, an Orbitar adapter, an LLM adapter, a character-growth engine, or a stable API. Ginger does **not** consume this package yet.
+This is **not** yet the production Ginger engine, an Orbitar adapter, an LLM adapter, a character-growth engine, or a stable API. Ginger **does consume** the pinned `history-context`, `attention-core`, and `thought-core` modules. Ginger does **not yet** use Tail's offline `runWake` prototype as its resident cognition loop.
 
 ## Run the offline prototype
 
@@ -68,7 +68,23 @@ Do not deploy this prototype against live accounts. Model and world adapters mus
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
-See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
+## Runtime Contracts v1
+
+The existing offline wake now consumes executable public boundary contracts
+for **identity, state, observation, cognition, authorization, and action
+receipts**, with TypeScript types available to package consumers.
+
+```js
+import { WAKE_CONTRACT_VERSION, parseWakeDecision } from 'ginger-tail/contracts'
+```
+
+The model's proposal is never an authorization. The trusted runtime
+denies actions by default, persists reservations before execution and
+blocks uncertain writes from being retried blindly.
+
+**These contracts do not yet replace Ginger's resident cognition loop.**
+See [Runtime Contracts](docs/CONTRACTS.md) for the exact v1 API, current
+limits and the later model/memory adapter seams.
 
 ## First shared engine module
 

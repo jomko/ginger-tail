@@ -1,31 +1,13 @@
 import { randomUUID } from 'node:crypto'
-
-function assertIdentity(identity) {
-  if (!identity || typeof identity.id !== 'string' || !identity.id.trim())
-    throw new TypeError('Identity must contain a non-empty id')
-}
-
-function parseDecision(decision) {
-  if (decision?.kind === 'rest') return { kind: 'rest' }
-  if (decision?.kind !== 'action' || !decision.action ||
-      typeof decision.action.kind !== 'string' ||
-      !/^[a-z][a-z0-9_-]{0,63}$/.test(decision.action.kind) ||
-      !decision.action.payload || typeof decision.action.payload !== 'object' ||
-      Array.isArray(decision.action.payload)) {
-    throw new TypeError('Invalid decision; expected rest or a bounded action proposal')
-  }
-  if (Buffer.byteLength(JSON.stringify(decision.action), 'utf8') > 4096)
-    throw new Error('Action proposal exceeds the 4 KiB limit')
-  return { kind: 'action', action: decision.action }
-}
+import {
+  assertAgentIdentity, assertWakePorts, parseWakeDecision,
+  assertBoundedObservation, isConfirmedActionReceipt,
+} from './contracts.mjs'
 
 export async function runWake({ identity, store, world, decide, authorize = async () => false,
                                 now = () => new Date().toISOString(), actionId = randomUUID }) {
-  assertIdentity(identity)
-  if (!store || typeof store.withLock !== 'function' ||
-      typeof store.load !== 'function' || typeof store.save !== 'function' ||
-      typeof world?.observe !== 'function' || typeof decide !== 'function' ||
-      typeof authorize !== 'function') throw new TypeError('Missing runtime adapter')
+  assertAgentIdentity(identity)
+  assertWakePorts({ store, world, decide, authorize })
 
   return store.withLock(async () => {
     const previous = await store.load()
@@ -36,9 +18,8 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
     }
 
     const observation = await world.observe({ identity, state: structuredClone(previous) })
-    if (Buffer.byteLength(JSON.stringify(observation), 'utf8') > 16384)
-      throw new Error('Observation exceeds the 16 KiB limit')
-    const decision = parseDecision(await decide({ identity, observation,
+    assertBoundedObservation(observation)
+    const decision = parseWakeDecision(await decide({ identity, observation,
                                                    state: structuredClone(previous) }))
     const updated = { ...previous, wakes: previous.wakes + 1 }
 
@@ -70,9 +51,7 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
     let receipt
     try {
       receipt = await world.execute({ identity, action: decision.action, actionId: id })
-      if (receipt?.status !== 'confirmed' ||
-          typeof receipt.receiptId !== 'string' || !receipt.receiptId ||
-          receipt.receiptId.length > 200) {
+      if (!isConfirmedActionReceipt(receipt)) {
         throw new Error('No confirmed execution receipt')
       }
     } catch {
