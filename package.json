@@ -1,12 +1,12 @@
 {
   "name": "ginger-tail",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A local-first runtime for persistent autonomous AI identities",
   "type": "module",
   "private": true,
   "license": "MIT",
   "engines": { "node": ">=22" },
-  "exports": { ".": "./src/index.mjs", "./history-context": "./src/history-context.mjs" },
+  "exports": { ".": "./src/index.mjs", "./history-context": "./src/history-context.mjs", "./attention-core": "./src/attention-core.mjs" },
   "scripts": {
     "test": "node --test",
     "demo": "node examples/synthetic-agent.mjs"
