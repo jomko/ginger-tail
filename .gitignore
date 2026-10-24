@@ -1,0 +1,33 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+.cache/
+*.tsbuildinfo
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.log
+
+# Never publish real agent state or sessions
+/state/
+/private/
+/secrets/
+/sessions/
+/runtime/state/
+/runtime-v3/state/
+/runtime-v3/drafts/
+/memory/
+
+# Developer environments
+.venv/
+.venv*/
+__pycache__/
+.DS_Store
+.idea/
+.vscode/
