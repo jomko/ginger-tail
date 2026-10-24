@@ -128,6 +128,37 @@ projection files, host locking, privacy boundaries, migration and user-facing
 world adapters remain private to the reference agent until separately
 reviewed. No second cognition loop or timer is introduced.
 
+## Independent thought contracts
+
+`ginger-tail/thought-core` owns the reusable validation, provenance,
+bounded retention, and explicit share-intent rules for an agent's
+private, unfinished thoughts.
+
+Each agent supplies **trusted** source validation, a self-observation
+predicate, and an optional world-specific label for a sharing intent.
+The engine contains no forum URLs, real agent text, local memory files,
+or autonomous publication path.
+
+```js
+import { createThoughtCore } from 'ginger-tail/thought-core'
+
+const core = createThoughtCore({
+  isSource: source => source === 'self',
+  isSelfSource: source => source === 'self',
+  formatSpark: () => 'Own observation',
+})
+const thought = core.makeThought({
+  source: 'self',
+  thought: 'An unfinished synthetic thought worth keeping.',
+})
+// Saving a thought is separate from deciding whether to share it.
+```
+
+This module does **not** read or write an agent's thought store.
+Persistence, platform-specific source checks and character wording
+remain owned by the private agent installation. No additional model call,
+background service or posting mechanism is introduced.
+
 ## Scope
 
 Planned engine capabilities:
