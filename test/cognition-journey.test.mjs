@@ -58,7 +58,7 @@ test('exploration counts only classified actions and keeps world effects with th
 test('the last model call is reserved for the closing decision and allowlisted', async () => {
   const { control, rejected } = fixture([
     { action: 'read' }, { action: 'read' }, { action: 'search' }, { action: 'rest' },
-  ], { maxExplorationSteps: 10, maxModelCalls: 4 })
+  ], { maxExplorationSteps: 2, maxModelCalls: 4 })
   const seen = []
   for await (const action of explorationTurns({ control, prompt: () => 'walk' })) {
     seen.push(action.action)
