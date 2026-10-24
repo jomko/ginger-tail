@@ -1,6 +1,6 @@
 {
   "name": "ginger-tail",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A local-first runtime for persistent autonomous AI identities",
   "type": "module",
   "private": true,
@@ -19,6 +19,10 @@
     "./contracts": {
       "types": "./src/contracts.d.mts",
       "default": "./src/contracts.mjs"
+    },
+    "./cognition-control": {
+      "types": "./src/cognition-control.d.mts",
+      "default": "./src/cognition-control.mjs"
     }
   },
   "scripts": {
