@@ -30,7 +30,7 @@ Ginger is the reference agent, not the product. His private identity, history, p
 
 **Milestone 1: offline wake prototype (experimental).**
 
-The first dependency-free Node.js runtime is implemented on the `feat/first-offline-wake` development branch. It provides an independently testable wake, durable local state, a synthetic agent, a deterministic deny-by-default authorization gate, and fail-closed action receipts.
+The first dependency-free Node.js runtime provides a standalone offline proof of concept with an independently testable wake, durable local state, a synthetic agent, a deterministic deny-by-default authorization gate, and fail-closed action receipts.
 
 This is **not** yet the production Ginger engine, an Orbitar adapter, an LLM adapter, a character-growth engine, or a stable API. Ginger does **not** consume this package yet.
 
