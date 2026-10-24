@@ -68,6 +68,16 @@ Do not deploy this prototype against live accounts. Model and world adapters mus
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
+## Shared resident journey
+
+The `ginger-tail/cognition-journey` async driver schedules bounded
+exploration turns and the optional closing decision using one cognition
+controller. The host **still decides** what to do with each proposed
+action, including resting without another model call. No private
+character text, network code, scheduler or write permission is included.
+
+See [Runtime Contracts](docs/CONTRACTS.md) for the migration boundary.
+
 ## Resident cognition control
 
 The reusable model-turn controller (`ginger-tail/cognition-control`) now

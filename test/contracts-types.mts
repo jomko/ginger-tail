@@ -9,6 +9,7 @@ import {
 } from 'ginger-tail/contracts'
 
 import { createCognitionControl, type CognitionControl } from 'ginger-tail/cognition-control'
+import { explorationTurns, closingTurn } from 'ginger-tail/cognition-journey'
 
 function typecheckOnly(): void {
 const controller: CognitionControl<{action: string}, {action: string}> = createCognitionControl({
@@ -18,6 +19,8 @@ const controller: CognitionControl<{action: string}, {action: string}> = createC
   invalidActionError: reason => Error(reason),
 })
 void controller.decide('Synthetic choice')
+void explorationTurns({ control: controller, prompt: () => 'Synthetic observation' })
+void closingTurn({ control: controller, prompt: () => 'Synthetic closing', allowed: action => action.action === 'rest' })
 const identity: AgentIdentity = { id: 'synthetic-cat' }
 const store = createFileStore({ directory: '/tmp/synthetic-only', agentId: identity.id })
 const world: WorldPort = { observe: async ({ identity }) => ({ from: identity.id }) }
