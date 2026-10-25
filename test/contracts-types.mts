@@ -47,7 +47,7 @@ void outcome
 void gate.observe({ status: 'blocked' })
 const route = createDecisionDispatcher<{action:string}>({
   rest: () => 'stop',
-  read: async () => 'continue',
+  read: async () => 'continue' as const,
 })
 const signal: Promise<DecisionFlow> = route({action:'rest'})
 void signal
