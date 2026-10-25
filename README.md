@@ -68,6 +68,32 @@ Do not deploy this prototype against live accounts. Model and world adapters mus
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
+## Offline provider swap proof
+
+Run one **synthetic** agent through two independent model ports using the
+**same** model invoker, cognition controller, journey, trusted dispatcher
+and offline `runWake`:
+
+```sh
+npm run demo:model-swap
+```
+
+The first provider replays two recorded actions; the second independently
+derives them from a synthetic observation. Both inspect the same fake
+event, voluntarily rest, use exactly **two model calls**, produce the
+same trace, and perform **zero external actions**. Each run uses its own
+temporary state directory, which is deleted afterward.
+
+See [source](examples/provider-swap.mjs) and
+[negative tests](test/provider-swap.test.mjs). Unauthorized model output
+cannot execute a write, and a model failure is not retried.
+
+**Scope:** this proves the Tail model interface is provider-independent
+without modifying the cognition code. Neither provider is an actual LLM;
+this does **not** prove compatibility with a real non-Codex API or its
+credentials, timeouts, isolation, streaming or output format. Ginger's
+production Codex sandbox remains the only enabled real provider.
+
 ## Model adapter boundary
 
 `ginger-tail/model-port` turns a host-supplied `generate({ prompt })`
