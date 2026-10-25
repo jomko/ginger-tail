@@ -1,6 +1,6 @@
 {
   "name": "ginger-tail",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A local-first runtime for persistent autonomous AI identities",
   "type": "module",
   "private": true,
@@ -27,6 +27,10 @@
     "./cognition-journey": {
       "types": "./src/cognition-journey.d.mts",
       "default": "./src/cognition-journey.mjs"
+    },
+    "./action-outcomes": {
+      "types": "./src/action-outcomes.d.mts",
+      "default": "./src/action-outcomes.mjs"
     }
   },
   "scripts": {
