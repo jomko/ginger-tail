@@ -42,7 +42,7 @@ const ports: WakePorts = { identity, store, world, decide, authorize }
 const result: Promise<WakeResult> = runWake(ports)
 const decision: WakeDecision = parseWakeDecision({ kind: 'rest' })
 const model: ModelPort = {
-  generate: async ({ prompt, maxOutputTokens }) => prompt.slice(0, maxOutputTokens),
+  generate: async ({ prompt }) => prompt,
 }
 const memory: MemoryPort<{ text: string }> = { recall: async () => [{ text: 'Synthetic note' }] }
 const version: number = WAKE_CONTRACT_VERSION
