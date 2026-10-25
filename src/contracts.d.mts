@@ -63,12 +63,12 @@ export interface MemoryPort<T = unknown> {
 }
 
 /**
- * Model invocation is separate from cognition, which interprets its response.
- * The v1 runWake prototype does NOT invoke this interface directly.
+ * The resident host now uses the same provider-neutral adapter as
+ * ginger-tail/model-port. The v1 runWake prototype still calls a host
+ * cognition callback rather than a ModelPort directly.
  */
-export interface ModelPort {
-  generate(input: { prompt: string; maxOutputTokens: number }): Promise<string>
-}
+export type ModelPort<Reply = unknown> =
+  import('./model-port.mjs').ResidentModelPort<Reply>
 
 export interface WakePorts {
   identity: AgentIdentity
