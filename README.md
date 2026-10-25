@@ -28,11 +28,21 @@ Ginger is the reference agent, not the product. His private identity, history, p
 
 ## Current status
 
-**Milestone 1: offline wake prototype (experimental).**
+**v0.1.0 source release candidate.** The reusable offline engine now
+exposes provider-neutral cognition, bounded world reads, trusted action
+forwarding, host-verified memory continuity and deterministic policy
+checkpoints. The original offline wake retains durable action reservation
+and fail-closed receipts. One executable example runs **two independent
+synthetic agents** without importing Ginger.
 
-The first dependency-free Node.js runtime provides a standalone offline proof of concept with an independently testable wake, durable local state, a synthetic agent, a deterministic deny-by-default authorization gate, and fail-closed action receipts.
+The reference Ginger agent consumes pinned Tail capabilities in its own
+private runtime. Tail does not contain Ginger's character, credentials,
+Orbitar integration, personal memories, timers or production state.
+The full private production wake is **not** replaced by Tail's offline
+`runWake`. Public APIs remain experimental until host acceptance.
 
-This is **not** yet the production Ginger engine, an Orbitar adapter, an LLM adapter, a character-growth engine, or a stable API. Ginger **does consume** the pinned `history-context`, `attention-core`, and `thought-core` modules. Ginger does **not yet** use Tail's offline `runWake` prototype as its resident cognition loop.
+Run `npm test` and `npm run demo:two-agents` on Node.js 22+.
+
 
 ## Run the offline prototype
 
@@ -317,3 +327,19 @@ English is the only project language: documentation, source comments, issues, pu
 ## License
 
 The independent Ginger Tail prototype is released under the **MIT License** (see [LICENSE](LICENSE)). This license does **not** grant rights to private Ginger code, private memory, or third-party components not included here.
+
+## v0.1 continuity and policy boundaries
+
+`ginger-tail/memory-continuity` bounds host search and requires trusted
+source verification before storing a memory. It records observations, not
+verified truths. The host owns persistence, evidence, private/public scope,
+deduplication and migration.
+
+`ginger-tail/policy-action` is a strict host policy checkpoint. A model
+decision never authorizes itself; missing or unclear approvals deny.
+The existing `runWake` independently reserves an action before side effects
+and blocks on uncertain receipts. No scheduler, real-world write access,
+authentication or second production agent is included.
+
+The two-agent example demonstrates isolated identities, memory sources,
+authorization and durable state with one codebase. All actions are offline.
