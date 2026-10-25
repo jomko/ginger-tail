@@ -68,6 +68,15 @@ Do not deploy this prototype against live accounts. Model and world adapters mus
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
+## Model adapter boundary
+
+`ginger-tail/model-port` turns a host-supplied `generate({ prompt })`
+provider into the existing callable model function. The provider owns
+authentication, sandbox isolation, credential proving and timeouts; the
+engine never receives or stores credentials. Responses are untrusted,
+with parsing and action permission checks still in the host/cognition
+pipeline. See [Runtime Contracts](docs/CONTRACTS.md).
+
 ## Trusted cognition decision dispatch
 
 `ginger-tail/decision-dispatch` routes validated decisions to explicit

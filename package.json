@@ -1,6 +1,6 @@
 {
   "name": "ginger-tail",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "A local-first runtime for persistent autonomous AI identities",
   "type": "module",
   "private": true,
@@ -35,6 +35,10 @@
     "./decision-dispatch": {
       "types": "./src/decision-dispatch.d.mts",
       "default": "./src/decision-dispatch.mjs"
+    },
+    "./model-port": {
+      "types": "./src/model-port.d.mts",
+      "default": "./src/model-port.mjs"
     }
   },
   "scripts": {

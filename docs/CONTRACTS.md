@@ -212,6 +212,33 @@ action bridge, action journal, vote ledger, permission checks, prompts,
 model isolation, character, memory and filesystem state. It must never
 register raw model-generated callback names or handlers.
 
+## Step 3 — Provider-neutral model port
+
+`ginger-tail/model-port` defines the single runtime-facing interface:
+`port.generate({ prompt })`, returning an **untrusted value** or
+propagating the host's error. It neither invokes a model when constructed
+nor catches/retries a failed invocation.
+
+```js
+import { createModelInvoker, legacyModelPort } from 'ginger-tail/model-port'
+
+const port = legacyModelPort(async prompt => ({ action: 'rest' }))
+const model = createModelInvoker(port)
+const reply = await model('Synthetic prompt') // still untrusted
+```
+
+The cognition controller remains the **only** model-turn counter.
+The real host supplies its own protected model runner and keeps
+authentication, credential refresh, sandbox mounts, tool restrictions,
+probe-before-call, output bounds and timeout enforcement outside Tail.
+No other model provider is enabled automatically.
+
+Ginger's historical callback `model(prompt)` is bridged with
+`legacyModelPort` for existing tests and callers. New callers can pass
+an explicit `modelPort` to the resident `once` API. The same
+trusted action parser remains after the adapter. The synthetic
+`runWake` demo still has no direct model port of its own.
+
 ## Reference-agent migration boundaries
 
 The currently deployed private Ginger still owns:
