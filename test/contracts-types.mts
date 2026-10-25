@@ -11,9 +11,18 @@ import {
 import { createCognitionControl, type CognitionControl } from 'ginger-tail/cognition-control'
 import { explorationTurns, closingTurn } from 'ginger-tail/cognition-journey'
 import { createDecisionDispatcher, type DecisionFlow } from 'ginger-tail/decision-dispatch'
+import { createModelInvoker, legacyModelPort, type ResidentModelPort } from 'ginger-tail/model-port'
 import { classifyActionOutcome, createActionOutcomeGate, type ActionOutcome } from 'ginger-tail/action-outcomes'
 
 function typecheckOnly(): void {
+const modelPort: ResidentModelPort<{ action: string }> = legacyModelPort(
+  async prompt => ({ action: prompt.length ? 'rest' : 'invalid' })
+)
+const modelTurn = createModelInvoker(modelPort)
+const untrustedModelResult: Promise<{ action: string }> | { action: string } =
+  modelTurn('synthetic prompt')
+void untrustedModelResult
+
 const controller: CognitionControl<{action: string}, {action: string}> = createCognitionControl({
   model: async () => ({ action: 'rest' }),
   parseReply: reply => reply,
