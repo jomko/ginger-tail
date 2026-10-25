@@ -120,6 +120,17 @@ The host retains all effects, evidence checks and permissions.
 
 See [Runtime Contracts](docs/CONTRACTS.md).
 
+## Trusted action execution port
+
+`ginger-tail/trusted-action-port` forwards an opaque **already authorized**
+write/vote payload to a trusted host callback without retries, receipt
+interpretation or credential access. It is not a generic world executor:
+the host still performs evidence checks, permissions, action budgets,
+idempotency, persistent journaling and transport. Never expose the invoker
+to untrusted model output or call it before the trusted host's checks.
+
+See [Runtime Contracts](docs/CONTRACTS.md).
+
 ## Trusted action outcomes
 
 `ginger-tail/action-outcomes` is the shared classifier for confirmed,
