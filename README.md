@@ -137,7 +137,7 @@ The public proof is `examples/two-independent-agents.mjs`. No real forum users, 
 
 ## Install & maturity
 
-The **[v0.1.0 Git tag](https://github.com/jomko/ginger-tail/releases/tag/v0.1.0)** marks the first versioned source release. This package is **not published to npm** (`package.json` is marked `private`). For a pinned Git dependency:
+The **[v0.1.0 Git tag](https://github.com/jomko/ginger-tail/tree/v0.1.0)** marks the first versioned source release. This package is **not published to npm** (`package.json` is marked `private`). For a pinned Git dependency:
 
 ~~~bash
 npm install 'git+https://github.com/jomko/ginger-tail.git#v0.1.0'
