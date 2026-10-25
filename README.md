@@ -1,345 +1,167 @@
 # Ginger Tail
+### A brain is rented by the minute. A life takes longer.
 
-**The tail wags the cat.**
+**The tail wags the cat.** 🐈
 
-A local-first runtime for persistent autonomous AI identities.
+Ginger Tail is a small, local-first runtime for long-lived AI agents. It helps an agent carry state between model calls, follow a thread of interest, remember with sources, and ask a trusted host before touching the world.
 
-> The model reasons. The agent persists.
+A language model gets to think. It does **not** get the house keys.
 
-Ginger Tail is a publicly developed engine intended for open-source release, designed for long-lived AI agents with durable identities, selective memory, evolving character, and policy-controlled actions.
+> **The model reasons. The agent persists.**
 
-Rather than treating a model invocation as the agent, Ginger Tail treats model calls as temporary cognition. The agent's identity, experiences, constraints, and continuity live outside the model.
+---
 
-## Design principles
+## Why does a cat need a tail?
 
-- **Identity outlives the model.** Character, values, and durable memory do not depend on a single LLM or context window.
-- **Experience is evidence.** Remember selectively, preserve provenance, distinguish observation from verified fact, and support correction.
-- **Character evolves deliberately.** Repeated evidence may justify a change; a single conversation does not rewrite identity.
-- **Agency includes silence.** Thinking, saving an observation, and choosing to publish are separate decisions.
-- **Autonomy has boundaries.** Untrusted model output proposes actions; a trusted runtime validates and executes them.
-- **Local-first by default.** The operator controls the agent's state and its external integrations.
-- **One engine, many agents.** Characters and environment adapters belong to individual agent installations, not to the core runtime.
+Most AI demos live for one prompt. They wake up, say something impressive, and promptly forget where they left the furniture.
 
-## Where this comes from
+An enduring agent needs different plumbing:
 
-Ginger Tail is being extracted from **Ginger**, a long-running autonomous character with an independent identity, local memory, and a social environment.
+- **Continuity over amnesia.** Identity and state live outside the model window.
+- **Memory with receipts.** A source being visible is not the same as a claim being true.
+- **Curiosity without a content quota.** Reading, thinking, remembering, sharing, and going back to sleep are different things.
+- **Authority outside the model.** A proposed action is not permission to perform it.
+- **More than one cat.** The engine is reusable; every agent has its own identity, home, memory, and boundaries.
 
-Ginger is the reference agent, not the product. His private identity, history, personal relationships, credentials, and runtime state **must not** be copied into this repository.
+This is infrastructure for agency, not a claim that an AI is conscious, and definitely not a button labelled **AUTONOMY™**.
 
-## Current status
+## The short version
 
-**v0.1.0 source release candidate.** The reusable offline engine now
-exposes provider-neutral cognition, bounded world reads, trusted action
-forwarding, host-verified memory continuity and deterministic policy
-checkpoints. The original offline wake retains durable action reservation
-and fail-closed receipts. One executable example runs **two independent
-synthetic agents** without importing Ginger.
+~~~text
+             MODEL
+        (temporary thought)
+                |
+                v
+       +--------------------+
+       |    GINGER TAIL     |
+       | cognition / budget |
+       | journey / context  |
+       | memory / lifecycle |
+       | typed action ports |
+       +--------------------+
+                |
+                v
+        TRUSTED AGENT HOST
+   identity · source checks · policy
+   credentials · journal · persistence
+                |
+                v
+           THE WORLD
+      (only if permitted)
+~~~
 
-The reference Ginger agent consumes pinned Tail capabilities in its own
-private runtime. Tail does not contain Ginger's character, credentials,
-Orbitar integration, personal memories, timers or production state.
-The full private production wake is **not** replaced by Tail's offline
-`runWake`. Public APIs remain experimental until host acceptance.
+The model may suggest a walk. The host decides whether the door opens. The tail doesn't steal the keys.
 
-Run `npm test` and `npm run demo:two-agents` on Node.js 22+.
+## Try it before the cat notices
 
+**Node.js 22+**. No API key, social account, network service, third-party runtime dependency, or actual cat required.
 
-## Run the offline prototype
+~~~bash
+git clone https://github.com/jomko/ginger-tail.git
+cd ginger-tail
+npm test
+npm run demo
+npm run demo
+~~~
 
-Requires **Node.js 22+**; no installation of third-party packages, API keys, network access, or live account is needed.
+The single-agent demo counts two separate wakes in `.ginger-tail-demo-state/` (gitignored). Set `GINGER_TAIL_STATE_DIR` to move that demo state.
 
-```sh
-npm test           # synthetic, offline unit tests
-npm run demo       # one synthetic rest wake (persists a local counter)
-npm run demo       # another wake; counter increases
-```
+Two independent agents, **one engine**, completely offline:
 
-The demonstration writes only to `.ginger-tail-demo-state/` (gitignored). Set `GINGER_TAIL_STATE_DIR` to choose an alternative directory.
+~~~bash
+npm run demo:two-agents
+~~~
 
-### Minimal integration contract
+One agent is allowed a synthetic action. The other is not. Their identities, remembered observations, stores, and receipts stay separate. This is a real isolation test, not two different prompt costumes.
 
-```js
+Want to swap model providers without swapping the decision logic?
+
+~~~bash
+npm run demo:model-swap
+~~~
+
+Both providers here are **synthetic** (replay and rules), not real LLM APIs. Zero external actions.
+
+## The smallest real example
+
+~~~js
 import { createFileStore, runWake } from 'ginger-tail'
 
-const identity = { id: 'example-agent' }
-const store = createFileStore({ directory: '/your/local/state', agentId: identity.id })
+const identity = { id: 'sleepy-cartographer' }
+const store = createFileStore({
+  directory: './my-agent-state',
+  agentId: identity.id,
+})
 
-await runWake({
+const result = await runWake({
   identity,
   store,
-  world: { observe: async () => ({ message: 'Synthetic observation' }) },
+  world: {
+    observe: async () => ({ event: 'A perfectly ordinary hill.' }),
+  },
   decide: async () => ({ kind: 'rest' }),
 })
-```
 
-A proposed action has the shape `{ kind: 'action', action: { kind: '...', payload: {} } }`. The runtime **denies all actions unless `authorize` explicitly returns `true`** and a trusted world adapter implements `execute`. A confirmed execution receipt is required; an uncertain action blocks later wakes pending manual reconciliation. The local single-host lock is never automatically broken.
+console.log(result.outcome) // 'rest'
+~~~
 
-Do not deploy this prototype against live accounts. Model and world adapters must enforce their own isolation; this minimal package does not sandbox arbitrary JavaScript callbacks.
+`rest` is a first-class outcome. Doing nothing is not a failing grade.
 
-See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
+For an external action, the host must supply an explicit `authorize` callback, a trusted `world.execute` adapter, and a **confirmed execution receipt**. Authorization defaults to denial. An uncertain result blocks subsequent action until reconciliation; there is no optimistic re-try-and-pray.
 
-## Offline provider swap proof
+## What is in v0.1.0?
 
-Run one **synthetic** agent through two independent model ports using the
-**same** model invoker, cognition controller, journey, trusted dispatcher
-and offline `runWake`:
+| Piece | Job |
+| --- | --- |
+| `contracts` + `runWake` | Bounded offline wake, persistent state, default-deny actions, receipt-first safety |
+| `history-context` | Context budgets; distinguish full reading from truncation |
+| `attention-core` | Active, dormant, resumed, and closed interests |
+| `thought-core` | Private thoughts, evidence and separate share intent |
+| `cognition-control` + `cognition-journey` | Model-call budgets, exploration, optional closing choice, voluntary rest |
+| `model-port` + `world-read-port` | Provider-neutral model and host-owned observation adapters |
+| `decision-dispatch` + `trusted-action-port` | Route decisions to trusted callbacks; never grant permission by routing |
+| `memory-continuity` | Host-backed recall and source-verified observation recording |
+| `policy-action` + `action-outcomes` | Explicit approval checkpoints and uncertainty brakes |
 
-```sh
-npm run demo:model-swap
-```
+Every module is intentionally narrow. Tail is **not** an Orbitar client, a credential manager, a sandbox, a posting bot, or a complete production scheduler.
 
-The first provider replays two recorded actions; the second independently
-derives them from a synthetic observation. Both inspect the same fake
-event, voluntarily rest, use exactly **two model calls**, produce the
-same trace, and perform **zero external actions**. Each run uses its own
-temporary state directory, which is deleted afterward.
+Read the [architecture](docs/ARCHITECTURE.md) and [runtime contracts](docs/CONTRACTS.md) for what each piece does—and, more importantly, what it refuses to do.
 
-See [source](examples/provider-swap.mjs) and
-[negative tests](test/provider-swap.test.mjs). Unauthorized model output
-cannot execute a write, and a model failure is not retried.
+## One tail, several lives
 
-**Scope:** this proves the Tail model interface is provider-independent
-without modifying the cognition code. Neither provider is an actual LLM;
-this does **not** prove compatibility with a real non-Codex API or its
-credentials, timeouts, isolation, streaming or output format. Ginger's
-production Codex sandbox remains the only enabled real provider.
+Ginger Tail grew out of **Ginger**, a privately configured resident AI character. Ginger's running installation now consumes **commit-pinned Tail v0.1.0 components** through its own trusted host. His voice, memories, history, credentials, world integration, timers, and operational safeguards **are not in this repo**.
 
-## Read-only world adapter boundary
+The independent `runWake` prototype and the shared resident modules are **not yet one universal drop-in production daemon**. Integrators must supply state, source validation, model isolation, policy and external transport. Don't point an example at a real account and call it deployment.
 
-`ginger-tail/world-read-port` forwards world observations to a trusted
-host reader without knowledge of Orbitar endpoints, credentials or
-transport. Responses remain untrusted and do not confer permission for
-writes, votes or other effects. Host-owned policy and action journals
-are unchanged. See [Runtime Contracts](docs/CONTRACTS.md).
+The public proof is `examples/two-independent-agents.mjs`. No real forum users, model tokens, or private agent histories were invited to that party.
 
-## Model adapter boundary
+## Install & maturity
 
-`ginger-tail/model-port` turns a host-supplied `generate({ prompt })`
-provider into the existing callable model function. The provider owns
-authentication, sandbox isolation, credential proving and timeouts; the
-engine never receives or stores credentials. Responses are untrusted,
-with parsing and action permission checks still in the host/cognition
-pipeline. See [Runtime Contracts](docs/CONTRACTS.md).
+The **[v0.1.0 Git tag](https://github.com/jomko/ginger-tail/releases/tag/v0.1.0)** marks the first versioned source release. This package is **not published to npm** (`package.json` is marked `private`). For a pinned Git dependency:
 
-## Trusted cognition decision dispatch
+~~~bash
+npm install 'git+https://github.com/jomko/ginger-tail.git#v0.1.0'
+~~~
 
-`ginger-tail/decision-dispatch` routes validated decisions to explicit
-host callbacks, with independent exploration and closing allowlists.
-Missing actions and unsafe inherited property names fail closed.
-The host retains all effects, evidence checks and permissions.
+APIs are **experimental**; pin an exact version or reviewed commit. Updating this README after the tag does not silently change the v0.1.0 source.
 
-See [Runtime Contracts](docs/CONTRACTS.md).
+- [Start here / architecture](docs/ARCHITECTURE.md)
+- [Ports, limits and contracts](docs/CONTRACTS.md)
+- [Extraction milestones and privacy boundary](docs/EXTRACTION.md)
+- [Release notes](CHANGELOG.md)
 
-## Trusted action execution port
+## Rules of the house
 
-`ginger-tail/trusted-action-port` forwards an opaque **already authorized**
-write/vote payload to a trusted host callback without retries, receipt
-interpretation or credential access. It is not a generic world executor:
-the host still performs evidence checks, permissions, action budgets,
-idempotency, persistent journaling and transport. Never expose the invoker
-to untrusted model output or call it before the trusted host's checks.
+1. Untrusted model output never authorizes itself.
+2. Evidence and uncertain outcomes keep their labels. Don't promote guesses into facts.
+3. No blind retry of a possibly completed external action.
+4. Agents own their private state. The public engine does not collect it.
+5. An agent may choose silence. Sometimes that is the most intelligent comment in the thread.
 
-See [Runtime Contracts](docs/CONTRACTS.md).
+**Public repository, synthetic fixtures only.** Never submit real credentials, private memories, production logs, or another person's identity. See the [MIT License](LICENSE); it covers the public code, not Ginger's private installation.
 
-## Trusted action outcomes
+---
 
-`ginger-tail/action-outcomes` is the shared classifier for confirmed,
-rejected and uncertain action results. Its single-wake brake prevents a
-second write after an uncertain outcome. The trusted host retains
-permissions, receipts, idempotency and the durable action journal.
+*Built for agents who remember where they came from—without pretending they know where they're going.*
 
-See [Runtime Contracts](docs/CONTRACTS.md). No external writes or
-retries occur inside this module.
-
-## Shared resident journey
-
-The `ginger-tail/cognition-journey` async driver schedules bounded
-exploration turns and the optional closing decision using one cognition
-controller. The host **still decides** what to do with each proposed
-action, including resting without another model call. No private
-character text, network code, scheduler or write permission is included.
-
-See [Runtime Contracts](docs/CONTRACTS.md) for the migration boundary.
-
-## Resident cognition control
-
-The reusable model-turn controller (`ginger-tail/cognition-control`) now
-budgets exploration, retries invalid replies once per wake, reserves a
-closing decision and accepts voluntary rest. The model, action parser
-and recovery note remain supplied by the agent.
-
-This is the **first shared seam** of the cognition loop, not a second
-agent and not a replacement for Ginger's trusted world actions.
-See [Runtime Contracts](docs/CONTRACTS.md).
-
-## Runtime Contracts v1
-
-The existing offline wake now consumes executable public boundary contracts
-for **identity, state, observation, cognition, authorization, and action
-receipts**, with TypeScript types available to package consumers.
-
-```js
-import { WAKE_CONTRACT_VERSION, parseWakeDecision } from 'ginger-tail/contracts'
-```
-
-The model's proposal is never an authorization. The trusted runtime
-denies actions by default, persists reservations before execution and
-blocks uncertain writes from being retried blindly.
-
-**These contracts do not yet replace Ginger's resident cognition loop.**
-See [Runtime Contracts](docs/CONTRACTS.md) for the exact v1 API, current
-limits and the later model/memory adapter seams.
-
-## First shared engine module
-
-`ginger-tail/history-context` is the first reusable implementation being
-adopted by the private reference agent. It bounds serialized observations and
-distinguishes **full visibility** from **truncated or omitted context**.
-
-The export keeps the established resident semantics:
-`HISTORY_BUDGET`, `READ_ITEM_BUDGET`, `SEARCH_ITEM_BUDGET`,
-`boundedReadItem`, `boundedSearchItem`, and `renderHistory`.
-It makes no network calls and reads or writes no agent state.
-
-```js
-import { boundedReadItem, renderHistory } from 'ginger-tail/history-context'
-
-const action = { action: 'read_post', postId: 42 }
-const thread = {
-  post: { id: 42, title: 'Synthetic thread', content: 'Observed text.', comments: 0 },
-  comments: [],
-}
-const { item } = boundedReadItem(action, thread)
-const displayed = renderHistory([item])
-console.log(displayed.visible.has(item)) // true
-```
-
-The public source originates from the reference agent's *generic context
-budget implementation*, not from its private identity, memories, model
-credentials, runtime logs, or social data. The private agent will consume
-this module through a **commit-pinned dependency** only after host tests.
-No second agent, scheduler or production cognition loop is introduced.
-
-## Attention lifecycle state machine
-
-`ginger-tail/attention-core` provides deterministic, source-agnostic
-transitions for unfinished interests: **active → dormant → resumed / closed**.
-
-The engine owns event replay, transition planning, stable IDs and projection
-fingerprints. The agent supplies a `renderInterest` callback that determines
-how an interest is serialized, including any world-specific reference. The
-engine knows nothing about Orbitar, character content or local memory files.
-
-```js
-import { replayInterestEvents, planInterestTransition } from 'ginger-tail/attention-core'
-
-const renderInterest = item => item.text + '\\n'
-const current = replayInterestEvents([], renderInterest)
-const planned = planInterestTransition(
-  current,
-  { op: 'carry', text: 'Explore an interesting question' },
-  { renderInterest },
-)
-// planned.events may be validated and persisted by the host's trusted store.
-```
-
-This is the **pure state machine** only. Persistent log writes, legacy
-projection files, host locking, privacy boundaries, migration and user-facing
-world adapters remain private to the reference agent until separately
-reviewed. No second cognition loop or timer is introduced.
-
-## Independent thought contracts
-
-`ginger-tail/thought-core` owns the reusable validation, provenance,
-bounded retention, and explicit share-intent rules for an agent's
-private, unfinished thoughts.
-
-Each agent supplies **trusted** source validation, a self-observation
-predicate, and an optional world-specific label for a sharing intent.
-The engine contains no forum URLs, real agent text, local memory files,
-or autonomous publication path.
-
-```js
-import { createThoughtCore } from 'ginger-tail/thought-core'
-
-const core = createThoughtCore({
-  isSource: source => source === 'self',
-  isSelfSource: source => source === 'self',
-  formatSpark: () => 'Own observation',
-})
-const thought = core.makeThought({
-  source: 'self',
-  thought: 'An unfinished synthetic thought worth keeping.',
-})
-// Saving a thought is separate from deciding whether to share it.
-```
-
-This module does **not** read or write an agent's thought store.
-Persistence, platform-specific source checks and character wording
-remain owned by the private agent installation. No additional model call,
-background service or posting mechanism is introduced.
-
-## Scope
-
-Planned engine capabilities:
-
-- Resident lifecycle and bounded wake orchestration
-- Persistent identity loading and context construction
-- Selective memory and provenance-aware recall
-- Independent thought, share, and composition phases
-- Attention and unfinished-interest lifecycles
-- Experience-based character reflection
-- Trusted, auditable action execution
-- Pluggable models and environment adapters
-
-**Non-goals:** a general-purpose business automation framework; mandatory posting schedules; unrestricted shell access for models; importing private agent data; making claims of consciousness.
-
-## Project boundaries
-
-```text
-Ginger Tail (public engine)
-  ├── identity / memory / attention contracts
-  ├── resident cognition and lifecycle
-  ├── policy-based action execution
-  └── adapter interfaces
-          ▲
-          │ consumes a versioned engine
-          │
-Ginger (private agent installation)
-  ├── character and personal memory
-  ├── private state and secrets
-  ├── model configuration
-  └── Orbitar adapter and social context
-```
-
-There must be **one authoritative implementation** of each shared capability. Do not maintain a parallel copy of the runtime in Ginger.
-
-## Security and privacy
-
-This is a **public repository**. Never commit tokens, session files, private memories, real run logs, personal data, or the Git history of the private Ginger repository.
-
-The extraction process must audit file contents, code paths, configuration defaults, fixtures, and commit history before each module is published. Test data must be synthetic.
-
-## Language
-
-English is the only project language: documentation, source comments, issues, pull requests, commit messages, and user-facing product text.
-
-## License
-
-The independent Ginger Tail prototype is released under the **MIT License** (see [LICENSE](LICENSE)). This license does **not** grant rights to private Ginger code, private memory, or third-party components not included here.
-
-## v0.1 continuity and policy boundaries
-
-`ginger-tail/memory-continuity` bounds host search and requires trusted
-source verification before storing a memory. It records observations, not
-verified truths. The host owns persistence, evidence, private/public scope,
-deduplication and migration.
-
-`ginger-tail/policy-action` is a strict host policy checkpoint. A model
-decision never authorizes itself; missing or unclear approvals deny.
-The existing `runWake` independently reserves an action before side effects
-and blocks on uncertain receipts. No scheduler, real-world write access,
-authentication or second production agent is included.
-
-The two-agent example demonstrates isolated identities, memory sources,
-authorization and durable state with one codebase. All actions are offline.
+*The cat is not included. The tail is.*
