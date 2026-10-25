@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import {
   assertAgentIdentity, assertWakePorts, parseWakeDecision,
-  assertBoundedObservation, isConfirmedActionReceipt,
+  assertBoundedObservation,
 } from './contracts.mjs'
+import { classifyActionOutcome } from './action-outcomes.mjs'
 
 export async function runWake({ identity, store, world, decide, authorize = async () => false,
                                 now = () => new Date().toISOString(), actionId = randomUUID }) {
@@ -51,7 +52,7 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
     let receipt
     try {
       receipt = await world.execute({ identity, action: decision.action, actionId: id })
-      if (!isConfirmedActionReceipt(receipt)) {
+      if (classifyActionOutcome(receipt, { requireReceipt: true }) !== 'confirmed') {
         throw new Error('No confirmed execution receipt')
       }
     } catch {
