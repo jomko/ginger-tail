@@ -239,6 +239,37 @@ an explicit `modelPort` to the resident `once` API. The same
 trusted action parser remains after the adapter. The synthetic
 `runWake` demo still has no direct model port of its own.
 
+## Step 4 — Read-only resident world port
+
+`ginger-tail/world-read-port` is a minimal **read-only** boundary for the
+production resident, separate from the offline prototype's `WorldPort`
+(which also describes a trusted `execute` callback). It forwards
+`(operation, input)` to a host-provided `read({ operation, input })`
+and returns **untrusted observations** without decoding or interpreting
+them. The port never performs a read during construction.
+
+```js
+import { createWorldReader, legacyWorldReadPort } from 'ginger-tail/world-read-port'
+const readWorld = createWorldReader(legacyWorldReadPort(async (op, input) => {
+  // The host validates operations, enforces visibility and owns transport.
+  return { operation: op, input }
+}))
+const observation = await readWorld('synthetic-post', { id: 1 })
+```
+
+Tail validates the generic operation name but **does not authorize it**.
+For Ginger, its private `orbitarRead` still enforces the exact endpoint
+allowlist, keeps the session ID and API base URL in the host's closure,
+and retains network timeouts and Orbitar error handling. The world port
+does not receive that configuration or credentials.
+
+This initial step covers remote **observations**, not effects: the
+resident's `bridgeSender`, vote ledger, write policy, durable pending
+journal, archival reads and source checks stay private. No generic
+`execute` is exposed by this module; a future trusted action boundary
+must not bypass explicit permission checks or the persistent journal.
+The offline `runWake` prototype is unchanged.
+
 ## Reference-agent migration boundaries
 
 The currently deployed private Ginger still owns:
