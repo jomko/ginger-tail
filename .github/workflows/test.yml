@@ -19,5 +19,7 @@ jobs:
           node-version: '22'
       - name: Run offline tests
         run: npm test
+      - name: Verify independent synthetic agents
+        run: npm run demo:two-agents
       - name: Check published TypeScript contracts
         run: npm exec --yes --package=typescript@5.8.3 -- tsc --noEmit --strict --module NodeNext --moduleResolution NodeNext --target ES2022 test/contracts-types.mts
