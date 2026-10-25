@@ -10,6 +10,7 @@ import {
 
 import { createCognitionControl, type CognitionControl } from 'ginger-tail/cognition-control'
 import { explorationTurns, closingTurn } from 'ginger-tail/cognition-journey'
+import { createDecisionDispatcher, type DecisionFlow } from 'ginger-tail/decision-dispatch'
 import { classifyActionOutcome, createActionOutcomeGate, type ActionOutcome } from 'ginger-tail/action-outcomes'
 
 function typecheckOnly(): void {
@@ -44,4 +45,10 @@ const outcome: ActionOutcome = classifyActionOutcome({ status: 'uncertain' })
 const gate = createActionOutcomeGate()
 void outcome
 void gate.observe({ status: 'blocked' })
+const route = createDecisionDispatcher<{action:string}>({
+  rest: () => 'stop',
+  read: async () => 'continue',
+})
+const signal: Promise<DecisionFlow> = route({action:'rest'})
+void signal
 void typecheckOnly
