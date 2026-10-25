@@ -18,6 +18,13 @@ test('trusted bridge outcomes are explicitly classified without interpreting mod
   assert.equal(classifyActionOutcome({ status: 'uncertain' }), 'uncertain')
 })
 
+test('strict offline receipts cannot be replaced by a bare committed status', () => {
+  assert.equal(classifyActionOutcome({ status: 'committed' }, { requireReceipt: true }), 'uncertain')
+  assert.equal(classifyActionOutcome({ status: 'confirmed', receiptId: 'proof' },
+    { requireReceipt: true }), 'confirmed')
+  assert.throws(() => classifyActionOutcome({}, { requireReceipt: 'no' }), /receipt requirement/)
+})
+
 test('malformed or unfamiliar bridge outcomes always remain uncertain', () => {
   for (const value of [null, undefined, '', 'committed', {}, [], { status: 'ok' },
     { status: 'confirmed' }, { status: 'confirmed', receiptId: '' },
