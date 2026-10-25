@@ -1,18 +1,19 @@
+import { isConfirmedActionReceipt } from './contracts.mjs'
+
 // Classify results returned by a TRUSTED external-action adapter.
 // Never pass raw model output here as evidence of authorization or success.
 // This module does no I/O and never retries a side effect.
 
-export function classifyActionOutcome(result) {
+export function classifyActionOutcome(result, { requireReceipt = false } = {}) {
+  if (typeof requireReceipt !== 'boolean') throw new TypeError('Invalid receipt requirement')
   if (!result || typeof result !== 'object' || Array.isArray(result)) return 'uncertain'
   switch (result.status) {
     case 'confirmed':
       // The standalone wake has its own explicit receipt contract.
-      return typeof result.receiptId === 'string' &&
-        result.receiptId.length > 0 && result.receiptId.length <= 200
-        ? 'confirmed' : 'uncertain'
+      return isConfirmedActionReceipt(result) ? 'confirmed' : 'uncertain'
     case 'committed':
       // Only the trusted Ginger action bridge may issue this status.
-      return 'confirmed'
+      return requireReceipt ? 'uncertain' : 'confirmed'
     case 'blocked':
     case 'failed':
       return 'rejected'
