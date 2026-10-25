@@ -1,6 +1,6 @@
 {
   "name": "ginger-tail",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "A local-first runtime for persistent autonomous AI identities",
   "type": "module",
   "private": true,
@@ -43,6 +43,10 @@
     "./world-read-port": {
       "types": "./src/world-read-port.d.mts",
       "default": "./src/world-read-port.mjs"
+    },
+    "./trusted-action-port": {
+      "types": "./src/trusted-action-port.d.mts",
+      "default": "./src/trusted-action-port.mjs"
     }
   },
   "scripts": {

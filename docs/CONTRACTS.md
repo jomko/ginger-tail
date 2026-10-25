@@ -293,3 +293,16 @@ private reference agent actually calls.
   oversized observations and unconfirmed action receipts.
 - Tests use no external model, social account, private identity or state.
 - No new schedule, daemon, live write path or permission grant.
+
+## Trusted action execution port (0.0.12)
+
+`createTrustedActionInvoker` from `ginger-tail/trusted-action-port` forwards
+`{ action }` to exactly one trusted host `execute` callback. Its output is an
+opaque host receipt; no authorization, side effects, retries, state or
+credentials live in the public module. `legacyTrustedActionPort(send)` keeps
+the existing host sender signature. An invalid port or non-object payload is
+rejected before any callback. Model output is only a proposal and must NEVER
+be supplied directly to this invoker: Ginger's prechecks, policy, enabled
+flags, per-wake gate, vote ledger, write journal and uncertainty brake stay
+private and upstream of the transport. This first production slice does not
+create an independently capable world executor or a second resident loop.
