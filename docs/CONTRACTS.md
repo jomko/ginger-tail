@@ -306,3 +306,22 @@ be supplied directly to this invoker: Ginger's prechecks, policy, enabled
 flags, per-wake gate, vote ledger, write journal and uncertainty brake stay
 private and upstream of the transport. This first production slice does not
 create an independently capable world executor or a second resident loop.
+
+## v0.1 memory continuity and policy
+
+`createMemoryContinuity({ recall, verifyEvidence, append })` takes trusted
+host-owned adapters. Memory search uses bounded `limit/maxChars`, skips
+truncated or unsourced rows, and leaves result contents unchanged.
+`remember(note, evidenceContext)` verifies the source through the host
+callback and appends only when verified. This means *source was actually
+available*, not *statement is independently true*. No model-supplied
+`verified` property can override the host callback.
+
+`createPolicyCheck(check)` wraps a host decision. Only explicit
+`true` or `{ allow: true }` allows an already proposed action.
+The private host still owns facts, permissions, side-effect ceilings,
+action journals and emergency-stop behavior. `runWake` retains its own
+default-deny authorization and persist-before-execute receipt workflow.
+
+Run `npm run demo:two-agents` for an isolated demonstration of one
+generic engine hosting two independent synthetic agents.
