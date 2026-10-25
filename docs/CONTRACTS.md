@@ -185,6 +185,33 @@ This classifier never issues a write and never retries one. It does not
 replace Ginger's `ResidentActionController` or its vote ledger; those
 remain the authority for pending writes across wake processes.
 
+## Step 2 — Trusted decision dispatch (final routing seam)
+
+`ginger-tail/decision-dispatch` maps a *validated* cognition decision to
+an explicitly registered host handler. It is not a model action parser,
+authorization mechanism, or executor. The host registers distinct
+exploration and closing-phase handlers to retain the phase boundary.
+
+An unregistered action, including inherited object property names,
+fails closed; model output never supplies or overrides a handler.
+Handlers return `'stop'` for voluntary completion and otherwise
+`'continue'` (or no value). External errors propagate without retry.
+
+```js
+import { createDecisionDispatcher } from 'ginger-tail/decision-dispatch'
+const dispatch = createDecisionDispatcher({
+  rest: () => 'stop',
+  read: async action => { /* Trusted host handles this action. */ },
+})
+const signal = await dispatch({ action: 'rest' }) // 'stop'
+```
+
+The public engine only decides **which registered callback** receives
+the proposal. The private host retains its source visibility, trusted
+action bridge, action journal, vote ledger, permission checks, prompts,
+model isolation, character, memory and filesystem state. It must never
+register raw model-generated callback names or handlers.
+
 ## Reference-agent migration boundaries
 
 The currently deployed private Ginger still owns:
