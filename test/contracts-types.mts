@@ -12,9 +12,15 @@ import { createCognitionControl, type CognitionControl } from 'ginger-tail/cogni
 import { explorationTurns, closingTurn } from 'ginger-tail/cognition-journey'
 import { createDecisionDispatcher, type DecisionFlow } from 'ginger-tail/decision-dispatch'
 import { createModelInvoker, legacyModelPort, type ResidentModelPort } from 'ginger-tail/model-port'
+import { createWorldReader, legacyWorldReadPort, type ResidentWorldReadPort } from 'ginger-tail/world-read-port'
 import { classifyActionOutcome, createActionOutcomeGate, type ActionOutcome } from 'ginger-tail/action-outcomes'
 
 function typecheckOnly(): void {
+const worldReadPort: ResidentWorldReadPort<{ id: number }, { id: number }> =
+  legacyWorldReadPort(async (_operation, input) => ({ id: input.id }))
+const readWorld = createWorldReader(worldReadPort)
+const worldResult: Promise<{ id: number }> | { id: number } = readWorld('post', { id: 1 })
+void worldResult
 const modelPort: ResidentModelPort<{ action: string }> = legacyModelPort(
   async prompt => ({ action: prompt.length ? 'rest' : 'invalid' })
 )
