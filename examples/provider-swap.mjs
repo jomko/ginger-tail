@@ -85,7 +85,9 @@ export async function runSyntheticWake(modelPort) {
         })
         let stopped = false
         for await (const proposal of explorationTurns({ control, prompt })) {
-          if (proposal === null) break
+          // An exhausted invalid-reply retry is an intentional rest:
+          // do not request a new closing model call after this failure.
+          if (proposal === null) { stopped = true; break }
           if (await dispatch(proposal) === 'stop') { stopped = true; break }
         }
         if (!stopped) {
