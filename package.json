@@ -43,7 +43,8 @@
   },
   "scripts": {
     "test": "node --test",
-    "demo": "node examples/synthetic-agent.mjs"
+    "demo": "node examples/synthetic-agent.mjs",
+    "demo:model-swap": "node examples/provider-swap.mjs"
   },
   "types": "./src/index.d.mts"
 }
