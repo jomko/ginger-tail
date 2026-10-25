@@ -68,6 +68,15 @@ Do not deploy this prototype against live accounts. Model and world adapters mus
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
+## Trusted cognition decision dispatch
+
+`ginger-tail/decision-dispatch` routes validated decisions to explicit
+host callbacks, with independent exploration and closing allowlists.
+Missing actions and unsafe inherited property names fail closed.
+The host retains all effects, evidence checks and permissions.
+
+See [Runtime Contracts](docs/CONTRACTS.md).
+
 ## Trusted action outcomes
 
 `ginger-tail/action-outcomes` is the shared classifier for confirmed,
