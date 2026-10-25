@@ -94,6 +94,14 @@ this does **not** prove compatibility with a real non-Codex API or its
 credentials, timeouts, isolation, streaming or output format. Ginger's
 production Codex sandbox remains the only enabled real provider.
 
+## Read-only world adapter boundary
+
+`ginger-tail/world-read-port` forwards world observations to a trusted
+host reader without knowledge of Orbitar endpoints, credentials or
+transport. Responses remain untrusted and do not confer permission for
+writes, votes or other effects. Host-owned policy and action journals
+are unchanged. See [Runtime Contracts](docs/CONTRACTS.md).
+
 ## Model adapter boundary
 
 `ginger-tail/model-port` turns a host-supplied `generate({ prompt })`
