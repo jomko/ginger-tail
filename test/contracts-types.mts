@@ -10,6 +10,7 @@ import {
 
 import { createCognitionControl, type CognitionControl } from 'ginger-tail/cognition-control'
 import { explorationTurns, closingTurn } from 'ginger-tail/cognition-journey'
+import { classifyActionOutcome, createActionOutcomeGate, type ActionOutcome } from 'ginger-tail/action-outcomes'
 
 function typecheckOnly(): void {
 const controller: CognitionControl<{action: string}, {action: string}> = createCognitionControl({
@@ -39,4 +40,8 @@ const receiptIsValid: boolean = isConfirmedActionReceipt({ status: 'confirmed', 
 
 void [result, decision, model, memory, version, receiptIsValid]
 }
+const outcome: ActionOutcome = classifyActionOutcome({ status: 'uncertain' })
+const gate = createActionOutcomeGate()
+void outcome
+void gate.observe({ status: 'blocked' })
 void typecheckOnly
