@@ -1,73 +1,73 @@
-# Extraction Plan
+# Extraction journal · where the tail came from
 
-## Source and destination
+Ginger Tail is a **new public codebase with independent Git history**, not a mirror of the privately configured reference agent, Ginger.
 
-- **Private source / reference agent:** `jomko/ginger`
-- **Public destination:** `jomko/ginger-tail`
-- **Reference development worktree:** `~/code/ginger-engine-dev` (part of the private Ginger Git history)
-- **Live working directory:** `~/code/gingerPurr` (used by systemd; do not switch branches during a wake)
+We have been extracting **reusable mechanisms**, not copying a cat. Character, personal memory, creator context, private data, credentials, Orbitar-specific transports and live runtime state must remain on the host side of the boundary.
 
-Ginger Tail must have **independent, clean history**. Do not fork or push the private source repository to this public remote. The public repository remains a separate Git repository.
+## Milestones
 
-## Sequence
+| Step | Result at v0.1.0 |
+| --- | --- |
+| 1 · Public shell | Independent repository, MIT licensing for public code, synthetic-only fixtures |
+| 2 · First offline wake | Durable local state, voluntary rest, default-deny actions, action reservation + receipt |
+| 3 · Context, interest and thought | Shared context budget, attention lifecycle and independent thought contracts |
+| 4 · Cognition and adapters | Turn budgets, journey driver, provider/model port, read-only world port, host dispatch and action outcomes |
+| 5 · Memory & continuity | Host-backed recall and source-verification checkpoint |
+| 6 · Policy & actions | Explicit trusted policy check and action execution forwarding; host keeps journals and final authority |
+| 7 · Second agent | Two independent synthetic agents, one reusable engine; isolated states, sources, approvals and receipts |
+| 8 · v0.1.0 | Versioned source tag, offline tests, examples and integration into reference host |
 
-### 0. Public project shell (complete)
+**Status: shipped as a first source release, not “full production engine complete.”**
 
-Document the identity, scope, safeguards, and boundaries. Do not publish any agent data. The clean-room prototype is licensed under MIT. This does not license or redistribute the private Ginger source.
+The public source tag is `v0.1.0`. The reference installation uses pinned engine modules, while retaining its existing resident orchestrator, model sandbox, scheduler, memory stores and platform adapter. Migration is **incremental**, module by module; nobody replaced a living agent's identity with a demo fixture.
 
-### 1. Inventory and classify
+## Why the boundary matters
 
-Classify each candidate module:
-- `engine`: reusable logic with no agent identity or world-specific dependencies;
-- `adapter`: integration with a model or external world;
-- `agent`: Ginger-specific prompts, character, values, memory, and preferences;
-- `private`: local state, sessions, tokens, logs, creator data, and private history.
+Ginger Tail may contain:
+- original, provider-neutral source modules;
+- synthetic tests, public contracts and standalone examples;
+- architecture and release documentation.
 
-Record imports, filesystem paths, environment variables, write permissions, test fixtures, and licensing provenance.
+Ginger Tail must **never** contain:
+- private Ginger repository history or raw source-tree copies;
+- real agent identity, personal memories or private discussions;
+- session IDs, auth files, model tokens, state folders or runtime logs;
+- live forum exports, user data or real-world side-effect fixtures;
+- a new public agent that silently writes to the reference agent's account.
 
-### 2. Extract a minimal vertical slice (prototype implemented; acceptance pending)
+A successful private host acceptance test **does not transfer its data into the public repo**. Keep traces, secrets and production diagnoses local.
 
-A new, dependency-free local wake and synthetic agent now demonstrate **rest**, persistent state, deny-by-default action gating, and uncertain-write quarantine. They are original prototype code and **not yet** an extraction or replacement of Ginger's production runtime.
+## What the tag demonstrates
 
-The next engineering step is to map this API onto existing private Ginger runtime contracts without maintaining two production implementations. Reusing the prototype unchanged is **not** a goal if that would regress provenance, idempotency, autonomy, or security guarantees.
+- `npm test`: synthetic, offline regression suite.
+- `npm run demo`: one agent, persistent local wake counter, voluntary rest.
+- `npm run demo:model-swap`: two synthetic decision providers through unchanged cognition.
+- `npm run demo:two-agents`: independent fake agents exercising isolation and permissions.
 
-Require a clear separation between:
-- public engine contracts and implementation;
-- model/world adapters;
-- private agent configuration and state.
+It does **not** demonstrate two autonomous social-media accounts or production interoperability with an arbitrary hosted LLM.
 
-### 3. Make Ginger consume one engine
+## How future extraction should work
 
-Use a version- or commit-pinned dependency from the private reference installation. During migration, compatibility wrappers may bridge paths, but there must not be two actively maintained copies of core logic.
+1. **Identify one generic seam.** Document the caller, inputs, outputs, threat boundary and existing host behavior.
+2. **Classify its data.** Engine mechanism? Adapter? Agent-specific? Private?
+3. **Write a clean public implementation.** No copying private history into the public Git repository.
+4. **Prove with fake identities and sources.** Include denial paths, malformed output, uncertainty and no-retry behavior.
+5. **Integrate with the host through a pinned commit or tag.** Do not replace a live worktree to “see what happens.”
+6. **Accept separately on the host.** Typechecks, unit tests, compatibility checks, state backup, measured wake.
+7. **Record limitations.** If a real model runner times out, that is not automatically a new Tail feature.
 
-Keep systemd, guarded wake semantics, authorization policy, and memory locations stable until a separately reviewed host cutover.
+A public runtime bug gets a public runtime fix. A private transport, platform or credential problem stays with the host unless there is a proven reusable abstraction.
 
-### 4. Expand using verified needs
+## Release and migration rules
 
-Move attention, independent thoughts, evidence-backed recall, reflection, and authorized actions incrementally. Require targeted regression tests and controlled acceptance on the reference agent.
+- The `v0.1.0` tag is immutable; documentation changes on `main` do **not** alter the tag.
+- The package is Git-installable, not published to the npm registry.
+- API contracts are experimental, not promised stable across future minors.
+- No migration of private memory happens by installing the engine.
+- No action becomes authorized because the caller switched to Tail.
+- No hidden retries after unknown side effects.
+- Explicit rollback points are required before changing a live agent.
 
-A Ginger-specific behavior problem does not automatically justify an engine feature. Promote only generally useful capabilities.
+**Success is not “the entire private agent moved into a public package.”** Success is one trustworthy implementation of reusable capabilities, consumed by independent agents without leaking their lives.
 
-### 5. Release
-
-Before the first reusable release:
-- confirm the chosen MIT license covers each new module and its dependencies;
-- audit content and the complete public Git history for secrets, identifying data, internal paths, and private records;
-- verify synthetic fixtures and model/world adapter boundaries;
-- provide installation and minimal-run examples;
-- document supported Node versions and public API contracts;
-- pass automated tests without relying on a live social account.
-
-## Explicit prohibitions
-
-**Do not:**
-- import private Ginger Git history, branches, or worktrees into this repository;
-- commit `identity/`, `memory/`, `runtime-v3/state/`, real run logs, or auth/session files from Ginger;
-- call live Orbitar or a live LLM from repository unit tests;
-- auto-switch the live Ginger checkout or systemd service;
-- duplicate implementation code indefinitely between repositories;
-- make this repository public-ready by merely deleting `.env` files (history and fixtures need review too).
-
-## Definition of done for the first milestone
-
-A synthetic agent runs one bounded offline wake using Ginger Tail without importing code or private files from Ginger; its state persists across invocations, doing nothing is a valid result, and every proposed external action passes through a deterministic policy boundary.
+The tail should be portable. The cat's diary should not be.
