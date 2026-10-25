@@ -1,6 +1,6 @@
 {
   "name": "ginger-tail",
-  "version": "0.0.12",
+  "version": "0.1.0",
   "description": "A local-first runtime for persistent autonomous AI identities",
   "type": "module",
   "private": true,
@@ -47,12 +47,21 @@
     "./trusted-action-port": {
       "types": "./src/trusted-action-port.d.mts",
       "default": "./src/trusted-action-port.mjs"
+    },
+    "./memory-continuity": {
+      "types": "./src/memory-continuity.d.mts",
+      "default": "./src/memory-continuity.mjs"
+    },
+    "./policy-action": {
+      "types": "./src/policy-action.d.mts",
+      "default": "./src/policy-action.mjs"
     }
   },
   "scripts": {
     "test": "node --test",
     "demo": "node examples/synthetic-agent.mjs",
-    "demo:model-swap": "node examples/provider-swap.mjs"
+    "demo:model-swap": "node examples/provider-swap.mjs",
+    "demo:two-agents": "node examples/two-independent-agents.mjs"
   },
   "types": "./src/index.d.mts"
 }
