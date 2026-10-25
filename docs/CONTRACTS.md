@@ -149,6 +149,42 @@ world adapters: it owns only the exploration sequence and optional
 closing choice. The existing synthetic `runWake` is still an offline
 single-turn demonstration, not another deployed resident.
 
+## Step 2 — Trusted action outcomes (third seam)
+
+`ginger-tail/action-outcomes` classifies **results returned by a trusted
+world executor**. It never treats a model's proposed text as a result,
+proof of authorization, or a reason to repeat an external side effect.
+
+The classification is intentionally small:
+- `committed` from an already validated agent bridge: **confirmed**.
+- `confirmed` only with a bounded, nonempty receipt ID: **confirmed**.
+- `blocked` or `failed`: **rejected** (no side effect confirmed).
+- `uncertain`, missing, malformed or unknown status: **uncertain**.
+
+The standalone `runWake` requires an explicit receipt and rejects bare
+`committed` results. The Ginger bridge has its own deterministic
+validation and trusted action journal; it may use the `committed` form.
+
+A `createActionOutcomeGate()` blocks further external writes **within
+one wake** once any write result is uncertain. A confirmed or rejected
+write does not clear this brake. The host owns all persistence, global
+idempotency, locks, authorization, and cross-wake reconciliation.
+
+```js
+import { createActionOutcomeGate } from 'ginger-tail/action-outcomes'
+
+const gate = createActionOutcomeGate()
+if (!gate.blockedReason()) {
+  // A previously authorized, trusted executor returns this result:
+  gate.observe({ status: 'uncertain' })
+}
+console.log(gate.blockedReason()) // "earlier write uncertain"
+```
+
+This classifier never issues a write and never retries one. It does not
+replace Ginger's `ResidentActionController` or its vote ledger; those
+remain the authority for pending writes across wake processes.
+
 ## Reference-agent migration boundaries
 
 The currently deployed private Ginger still owns:

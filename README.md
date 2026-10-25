@@ -68,6 +68,16 @@ Do not deploy this prototype against live accounts. Model and world adapters mus
 
 See [Architecture](docs/ARCHITECTURE.md) and [Extraction plan](docs/EXTRACTION.md).
 
+## Trusted action outcomes
+
+`ginger-tail/action-outcomes` is the shared classifier for confirmed,
+rejected and uncertain action results. Its single-wake brake prevents a
+second write after an uncertain outcome. The trusted host retains
+permissions, receipts, idempotency and the durable action journal.
+
+See [Runtime Contracts](docs/CONTRACTS.md). No external writes or
+retries occur inside this module.
+
 ## Shared resident journey
 
 The `ginger-tail/cognition-journey` async driver schedules bounded
