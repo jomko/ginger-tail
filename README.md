@@ -61,7 +61,8 @@ git clone https://github.com/jomko/ginger-tail.git
 cd ginger-tail
 npm test
 npm run demo
-npm run demo
+npm run demo:two-agents
+npm run demo:model-swap
 ~~~
 
 The single-agent demo counts two separate wakes in `.ginger-tail-demo-state/` (gitignored). Set `GINGER_TAIL_STATE_DIR` to move that demo state.
