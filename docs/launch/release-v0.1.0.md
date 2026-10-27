@@ -40,11 +40,23 @@ This package is deliberately marked `private` in `package.json`; it is not publi
 
 This is an experimental v0.1 runtime foundation, not a turnkey production daemon or general agent framework. APIs may change; pin a reviewed tag or commit. The reference `runWake` path is a bounded single-wake prototype. The project does not provide a scheduler, model service, sandbox, credential manager, production transport, durable cross-wake action journal, migrations, or universal provider compatibility. A trusted host must implement those responsibilities and independently validate policy and external effects. The examples establish synthetic behavior only, not production autonomy or provider parity.
 
-The `v0.1.0` source tag is immutable. These release notes describe that tag; later documentation changes do not alter its contents.
+This release references the existing `v0.1.0` source tag, which currently resolves to commit [`d7988f4cd9a38791a60660fa0cd343abdfe6ea02`](https://github.com/jomko/ginger-tail/commit/d7988f4cd9a38791a60660fa0cd343abdfe6ea02). The commit identifies the source described here. Later documentation edits on `main` are not part of that tagged source.
 
-## Documentation
+## Documentation included in the tagged source
 
-- [README](https://github.com/jomko/ginger-tail/blob/main/README.md)
-- [Architecture](https://github.com/jomko/ginger-tail/blob/main/docs/ARCHITECTURE.md)
-- [Runtime contracts](https://github.com/jomko/ginger-tail/blob/main/docs/CONTRACTS.md)
+- [README](https://github.com/jomko/ginger-tail/blob/d7988f4cd9a38791a60660fa0cd343abdfe6ea02/README.md)
+- [Architecture](https://github.com/jomko/ginger-tail/blob/d7988f4cd9a38791a60660fa0cd343abdfe6ea02/docs/ARCHITECTURE.md)
+- [Runtime contracts](https://github.com/jomko/ginger-tail/blob/d7988f4cd9a38791a60660fa0cd343abdfe6ea02/docs/CONTRACTS.md)
+- [Extraction status](https://github.com/jomko/ginger-tail/blob/d7988f4cd9a38791a60660fa0cd343abdfe6ea02/docs/EXTRACTION.md)
+
+## Newer documentation on main
+
+The following files are newer than the tagged source or have newer revisions on `main`; they are not the documentation snapshot included with v0.1.0:
+
+- [Current README](https://github.com/jomko/ginger-tail/blob/main/README.md)
+- [Current architecture](https://github.com/jomko/ginger-tail/blob/main/docs/ARCHITECTURE.md)
+- [Current runtime contracts](https://github.com/jomko/ginger-tail/blob/main/docs/CONTRACTS.md)
+- [Current extraction status](https://github.com/jomko/ginger-tail/blob/main/docs/EXTRACTION.md)
 - [Changelog](https://github.com/jomko/ginger-tail/blob/main/CHANGELOG.md)
+- [Contributing guide](https://github.com/jomko/ginger-tail/blob/main/CONTRIBUTING.md)
+- [Launch documentation](https://github.com/jomko/ginger-tail/tree/main/docs/launch)

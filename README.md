@@ -144,7 +144,7 @@ The **[v0.1.0 Git tag](https://github.com/jomko/ginger-tail/tree/v0.1.0)** marks
 npm install 'git+https://github.com/jomko/ginger-tail.git#v0.1.0'
 ~~~
 
-APIs are **experimental**; pin an exact version or reviewed commit. Updating this README after the tag does not silently change the v0.1.0 source.
+APIs are **experimental**; pin an exact version or reviewed commit. This release references the existing `v0.1.0` tag, which currently resolves to commit [`d7988f4`](https://github.com/jomko/ginger-tail/commit/d7988f4cd9a38791a60660fa0cd343abdfe6ea02). Later edits to documentation on `main` do not change the files at that commit.
 
 - [Start here / architecture](docs/ARCHITECTURE.md)
 - [Ports, limits and contracts](docs/CONTRACTS.md)
