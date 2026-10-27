@@ -60,7 +60,7 @@ A public runtime bug gets a public runtime fix. A private transport, platform or
 
 ## Release and migration rules
 
-- The `v0.1.0` tag is immutable; documentation changes on `main` do **not** alter the tag.
+- The release references the existing `v0.1.0` tag, currently resolving to commit [`d7988f4`](https://github.com/jomko/ginger-tail/commit/d7988f4cd9a38791a60660fa0cd343abdfe6ea02). Later documentation changes on `main` do not change the files at that commit.
 - The package is Git-installable, not published to the npm registry.
 - API contracts are experimental, not promised stable across future minors.
 - No migration of private memory happens by installing the engine.

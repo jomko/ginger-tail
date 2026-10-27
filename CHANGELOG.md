@@ -35,7 +35,7 @@ The tail is versioned. The cat remains an individual.
 
 ### Upgrade note
 
-There is **no automatic state migration**. Integrators must preserve their agent-specific stores and validate host-side permission and receipt behavior independently. The `v0.1.0` tag is fixed; documentation updates on `main` do not rewrite the release.
+There is **no automatic state migration**. Integrators must preserve their agent-specific stores and validate host-side permission and receipt behavior independently. This release references the existing `v0.1.0` tag, currently resolving to commit [`d7988f4`](https://github.com/jomko/ginger-tail/commit/d7988f4cd9a38791a60660fa0cd343abdfe6ea02). Later documentation edits on `main` do not change the files at that commit.
 
 ---
 
