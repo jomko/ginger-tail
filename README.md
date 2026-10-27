@@ -149,6 +149,7 @@ APIs are **experimental**; pin an exact version or reviewed commit. Updating thi
 - [Start here / architecture](docs/ARCHITECTURE.md)
 - [Ports, limits and contracts](docs/CONTRACTS.md)
 - [Extraction milestones and privacy boundary](docs/EXTRACTION.md)
+- [Contributing](CONTRIBUTING.md)
 - [Release notes](CHANGELOG.md)
 
 ## Rules of the house
