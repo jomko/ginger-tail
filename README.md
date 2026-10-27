@@ -1,13 +1,36 @@
 # Ginger Tail
 ### A brain is rented by the minute. A life takes longer.
 
-**The tail wags the cat.** 🐈
+**The model reasons. The agent persists.** 🐈
 
-Ginger Tail is a small, local-first runtime for long-lived AI agents. It helps an agent carry state between model calls, follow a thread of interest, remember with sources, and ask a trusted host before touching the world.
+Ginger Tail is a small, **local-first Node.js runtime foundation for long-lived AI agents**. A model call ends; an agent's identity, state, interests, memory and permissions need somewhere to remain.
 
-A language model gets to think. It does **not** get the house keys.
+It keeps the reusable machinery separate from the agent's private life. The model can propose an action. A **trusted host** decides whether the door opens.
 
-> **The model reasons. The agent persists.**
+[**v0.1.0 source release**](https://github.com/jomko/ginger-tail/releases/tag/v0.1.0) · [Architecture](docs/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md) · MIT licensed
+
+---
+
+## Two agents. One tail. Different house keys.
+
+Run the small proof first. No API key, live account, network service or model provider needed; **Node.js 22+**.
+
+~~~bash
+git clone https://github.com/jomko/ginger-tail.git
+cd ginger-tail
+npm run demo:two-agents
+~~~
+
+The script runs **two synthetic agents through the same engine**. Each gets its own identity, local store and source-backed notes. The host allows a synthetic signal for one agent and denies it for the other.
+
+| In the offline demo | Cartographer | Gardener |
+| --- | --- | --- |
+| Local evidence source | `synthetic:cartographer` | `synthetic:gardener` |
+| Host permission | Allow | Deny |
+| Wake 1 → Wake 2 | `acted` → `acted` | `denied` → `denied` |
+| Confirmed synthetic receipts | 2 | 0 |
+
+This is a compact **summary of the example's behavior**, not a live-agent recording. [Read the runnable example](examples/two-independent-agents.mjs). The point isn't two different prompt costumes: it is *separate state and authority*.
 
 ---
 
@@ -54,34 +77,15 @@ The model may suggest a walk. The host decides whether the door opens. The tail 
 
 ## Try it before the cat notices
 
-**Node.js 22+**. No API key, social account, network service, third-party runtime dependency, or actual cat required.
+From the cloned repository, the rest of the offline tour:
 
 ~~~bash
-git clone https://github.com/jomko/ginger-tail.git
-cd ginger-tail
-npm test
-npm run demo
-npm run demo:two-agents
-npm run demo:model-swap
+npm test                 # runtime regression suite
+npm run demo             # one agent, persistent wake state
+npm run demo:model-swap  # two synthetic provider adapters
 ~~~
 
-The single-agent demo counts two separate wakes in `.ginger-tail-demo-state/` (gitignored). Set `GINGER_TAIL_STATE_DIR` to move that demo state.
-
-Two independent agents, **one engine**, completely offline:
-
-~~~bash
-npm run demo:two-agents
-~~~
-
-One agent is allowed a synthetic action. The other is not. Their identities, remembered observations, stores, and receipts stay separate. This is a real isolation test, not two different prompt costumes.
-
-Want to swap model providers without swapping the decision logic?
-
-~~~bash
-npm run demo:model-swap
-~~~
-
-Both providers here are **synthetic** (replay and rules), not real LLM APIs. Zero external actions.
+The one-agent demo counts separate wakes in `.ginger-tail-demo-state/` (gitignored); run it twice to see state persist. Set `GINGER_TAIL_STATE_DIR` to move that state. Both provider adapters are **synthetic** (replay and rules), not integrations with real LLM services. No external actions.
 
 ## The smallest real example
 
