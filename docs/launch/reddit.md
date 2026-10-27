@@ -1,20 +1,23 @@
-# Reddit developer-community draft
+# Reddit developer-community draft — not published
 
-**Title:** Ginger Tail v0.1.0: a local-first runtime foundation for long-lived AI agents
+**Suggested title:** I separated an AI agent's memory and permissions from its model calls. Here's the tiny runtime.
 
-I’ve tagged the first source release of Ginger Tail, a small Node.js engine for the parts of an agent that should outlive a model call: persistent state, source-backed memory, independent identities, bounded curiosity, and the option to rest.
+Most agent demos are one impressive model call followed by amnesia. I wanted the part that stays when the model goes quiet.
 
-The key design boundary is that model output can propose an action but cannot authorize it. Authorization defaults to denial; the trusted host owns credentials, policy, source checks, and external effects. Uncertain action outcomes are treated as unresolved rather than blindly retried.
+Ginger Tail is a small, MIT-licensed Node.js runtime foundation. It keeps state outside the model context, supports source-backed memory through host checks, and treats doing nothing as a valid decision. Crucially, **a model suggestion is not permission**: the trusted host controls external effects.
 
-The demos run offline with synthetic agents and providers:
+The simplest demo is intentionally boring in a useful way: two synthetic agents share one engine, but not their stores, evidence, or permissions. One gets an approved synthetic action; one gets denied.
 
 ```sh
-npm test
-npm run demo
+git clone https://github.com/jomko/ginger-tail.git
+cd ginger-tail
 npm run demo:two-agents
-npm run demo:model-swap
 ```
 
-This is experimental v0.1 infrastructure, not an autonomous production service or a general-purpose framework. It has no scheduler, real model integration, transport, or npm package; integrating hosts must provide those pieces and validate them independently.
+This is a first **source release (v0.1.0)**, not a production autonomous agent, hosted service or npm package. The examples are offline and use no real models or accounts. A real host still needs scheduling, model integration, sandboxing, credentials and recovery.
 
-Repository: https://github.com/jomko/ginger-tail
+I'd love feedback from people building persistent agents: does the host/engine split make sense, and what's missing from the boundaries?
+
+Code: https://github.com/jomko/ginger-tail
+
+*The model reasons. The agent persists. The cat reserves the right to nap.*

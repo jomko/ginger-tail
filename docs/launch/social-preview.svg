@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="title desc">
+  <title id="title">Ginger Tail — The model reasons. The agent persists.</title>
+  <desc id="desc">A dark charcoal title card. An orange tail-like line travels from a temporary model session through Ginger Tail persistent state to a trusted host policy gate.</desc>
+  <defs>
+    <linearGradient id="line" x1="0" x2="1"><stop stop-color="#F9B16C"/><stop offset="1" stop-color="#E37B3D"/></linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="#10151B"/>
+  <rect x="36" y="36" width="1208" height="568" rx="26" fill="none" stroke="#303842" stroke-width="2"/>
+  <circle cx="1180" cy="103" r="4" fill="#EE9655"/><circle cx="1205" cy="103" r="4" fill="#4A5965"/>
+  <text x="80" y="110" fill="#F29E5B" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700" letter-spacing="6">GINGER TAIL</text>
+  <text x="80" y="185" fill="#FAFAF5" font-family="Arial,Helvetica,sans-serif" font-size="54" font-weight="700">The model reasons.</text>
+  <text x="80" y="248" fill="#FAFAF5" font-family="Arial,Helvetica,sans-serif" font-size="54" font-weight="700">The agent <tspan fill="#F29E5B">persists.</tspan></text>
+
+  <path d="M 250,395 C 340,340 375,443 448,394 S 575,350 640,396 S 760,445 828,394 S 942,351 989,398" stroke="url(#line)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <circle cx="253" cy="394" r="11" fill="#F5A463"/>
+  <circle cx="641" cy="395" r="11" fill="#F5A463"/>
+  <circle cx="994" cy="396" r="11" fill="#F5A463"/>
+
+  <rect x="78" y="329" width="252" height="133" rx="17" fill="#19232C" stroke="#42515E"/>
+  <rect x="490" y="329" width="301" height="133" rx="17" fill="#2B271F" stroke="#D3884C"/>
+  <rect x="923" y="329" width="275" height="133" rx="17" fill="#19232C" stroke="#42515E"/>
+
+  <text x="104" y="377" fill="#F2F2EE" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700">MODEL</text>
+  <text x="104" y="415" fill="#ADC0CB" font-family="Arial,Helvetica,sans-serif" font-size="22">temporary thought</text>
+  <text x="516" y="377" fill="#F8C596" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700">GINGER TAIL</text>
+  <text x="516" y="415" fill="#E4D8C9" font-family="Arial,Helvetica,sans-serif" font-size="22">state · memory · rest</text>
+  <text x="949" y="377" fill="#F2F2EE" font-family="Arial,Helvetica,sans-serif" font-size="27" font-weight="700">TRUSTED HOST</text>
+  <text x="949" y="415" fill="#ADC0CB" font-family="Arial,Helvetica,sans-serif" font-size="22">policy · execution</text>
+
+  <text x="80" y="530" fill="#A9BAC5" font-family="Arial,Helvetica,sans-serif" font-size="23">Local-first agent runtime · MIT · v0.1.0</text>
+  <text x="80" y="572" fill="#E79A60" font-family="Arial,Helvetica,sans-serif" font-size="21">The cat is not included. The tail is.</text>
+  <text x="1197" y="573" text-anchor="end" fill="#738490" font-family="Arial,Helvetica,sans-serif" font-size="18">github.com/jomko/ginger-tail</text>
+</svg>
