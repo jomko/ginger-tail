@@ -5,7 +5,10 @@ import {
 } from './contracts.mjs'
 import { classifyActionOutcome } from './action-outcomes.mjs'
 
-const MAX_RECONCILIATIONS = 100
+// Decisions are kept separately from failed attempts, so a verifier that
+// keeps failing can never evict a confirmed or not-executed decision.
+const MAX_DECISIONS = 100
+const MAX_UNRESOLVED_ATTEMPTS = 20
 
 // Bounded, secret-free failure diagnostics: never an exception message.
 function failureDiagnostics(error) {
@@ -17,16 +20,29 @@ async function saveRecorded(store, state) {
   try { await store.save(state); return true } catch { return false }
 }
 
+function retainAudit(entries) {
+  const latest = (resolved, max) => new Set(entries.filter(entry =>
+    (entry.resolution !== 'unresolved') === resolved).slice(-max))
+  const decisions = latest(true, MAX_DECISIONS)
+  const attempts = latest(false, MAX_UNRESOLVED_ATTEMPTS)
+  return entries.filter(entry => decisions.has(entry) || attempts.has(entry))
+}
+
+// A post-rename durability failure: the new state is visible but unconfirmed.
+const replacedButNotDurable = error =>
+  error?.code === 'STATE_DURABILITY_UNCONFIRMED' && error.replaced === true
+
 // Cancels waiting on a side-effect-free port; the abandoned call cannot
-// influence this wake after rejection.
-function abortable(value, signal) {
-  if (!signal) return value
+// influence this wake after rejection. The port is not invoked at all once
+// aborted, and its promise is always handled.
+function abortable(call, signal) {
+  if (!signal) return call()
   signal.throwIfAborted()
+  const value = Promise.resolve(call())
   return new Promise((resolve, reject) => {
     const onAbort = () => reject(signal.reason)
     signal.addEventListener('abort', onAbort, { once: true })
-    Promise.resolve(value).then(resolve, reject)
-      .finally(() => signal.removeEventListener('abort', onAbort))
+    value.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
   })
 }
 
@@ -47,10 +63,10 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
     }
 
     const observation = await abortable(
-      world.observe({ identity, state: structuredClone(previous), signal }), signal)
+      () => world.observe({ identity, state: structuredClone(previous), signal }), signal)
     assertBoundedObservation(observation)
     const decision = parseWakeDecision(await abortable(
-      decide({ identity, observation, state: structuredClone(previous), signal }), signal))
+      () => decide({ identity, observation, state: structuredClone(previous), signal }), signal))
     const updated = { ...previous, wakes: previous.wakes + 1 }
 
     if (decision.kind === 'rest') {
@@ -60,8 +76,8 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
     }
 
     // Model proposals never authorize themselves. Deny by default.
-    const allowed = (await abortable(authorize({ identity, action: decision.action, observation,
-                                                 state: structuredClone(previous), signal }), signal)) === true
+    const allowed = (await abortable(() => authorize({ identity, action: decision.action, observation,
+                                                       state: structuredClone(previous), signal }), signal)) === true
     if (!allowed) {
       updated.lastOutcome = 'denied'
       await store.save(updated)
@@ -74,12 +90,19 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
 
     // Persist a reservation BEFORE an external side effect. A crash blocks
     // subsequent actions until a trusted operator calls resolvePendingAction.
-    // If this save throws, execute is never called.
+    // Unless this save is confirmed durable, execute is never called.
     const id = actionId()
     if (typeof id !== 'string' || !id || id.length > 128) throw new TypeError('Invalid action id')
     const pending = { ...updated, lastOutcome: 'pending',
                       pendingAction: { id, status: 'pending', kind: decision.action.kind, at: now() } }
-    await store.save(pending)
+    try {
+      await store.save(pending)
+    } catch (error) {
+      // Visible but unconfirmed: it may block later wakes, so report it. It
+      // is never cleared automatically; resolve it as not-executed.
+      if (replacedButNotDurable(error)) return { outcome: 'reservation_not_durable', actionId: id }
+      throw error
+    }
 
     let receipt, failure
     try {
@@ -91,22 +114,32 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
       failure = { reason: 'receipt_invalid' }
     }
     if (failure) {
-      // If even this save fails, the durable reservation still blocks later wakes.
+      // Whatever this save leaves visible (reservation or uncertain record) blocks.
       const recorded = await saveRecorded(store, { ...pending, lastOutcome: 'uncertain',
         pendingAction: { ...pending.pendingAction, status: 'uncertain', ...failure } })
       return { outcome: 'uncertain', actionId: id, reason: failure.reason, recorded }
     }
 
+    // Two-phase completion. Phase 1 makes the receipt durable while the action
+    // still blocks; only then does phase 2 clear the block. Any visible state
+    // that permits a new action therefore follows a DURABLE receipt, however
+    // either write fails (including a rename whose directory fsync fails).
     const lastReceipt = { actionId: id, receiptId: receipt.receiptId, kind: decision.action.kind }
     try {
+      await store.save({ ...pending, lastOutcome: 'uncertain',
+        pendingAction: { ...pending.pendingAction, status: 'uncertain', reason: 'completion_pending',
+                         receipt: { receiptId: receipt.receiptId } } })
+    } catch {
+      // Visible state is the reservation or the receipt record: both block.
+      return { outcome: 'uncertain', actionId: id, reason: 'completion_not_persisted',
+               recorded: false, receipt: lastReceipt }
+    }
+    try {
       await store.save({ ...pending, pendingAction: null, lastOutcome: 'acted', lastReceipt })
-    } catch (error) {
-      // The effect happened but completion is not durable. Keep the action
-      // blocked, keep the receipt, and hand it to the host for reconciliation.
-      const recorded = await saveRecorded(store, { ...pending, lastOutcome: 'uncertain',
-        pendingAction: { ...pending.pendingAction, status: 'uncertain', reason: 'receipt_not_persisted',
-                         receipt: { receiptId: receipt.receiptId }, error: failureDiagnostics(error) } })
-      return { outcome: 'uncertain', actionId: id, reason: 'receipt_not_persisted', recorded, receipt: lastReceipt }
+    } catch {
+      // The receipt is durable. Until the clear is durable the agent may
+      // still be blocked by it; reconcile with pendingAction.receipt.
+      return { outcome: 'acted', actionId: id, wakes: pending.wakes, durable: false }
     }
     return { outcome: 'acted', actionId: id, wakes: pending.wakes }
   })
@@ -181,7 +214,7 @@ export async function resolvePendingAction({ identity, store, actionId, verify, 
       ...(verifyError && { error: verifyError }),
       resolvedBy, at: now(),
     }
-    const reconciliations = [...history, entry].slice(-MAX_RECONCILIATIONS)
+    const reconciliations = retainAudit([...history, entry])
 
     if (resolution === 'unresolved') {
       await store.save({ ...state, reconciliations })

@@ -62,18 +62,17 @@ function failingSaves(store, shouldFail) {
   } }
 }
 
-test('persistence failure after execution keeps the receipt and an uncertain outcome', () => sandbox(async ({ directory }) => {
+test('a durable receipt whose block cannot be cleared stays blocked with that receipt', () => sandbox(async ({ directory }) => {
   const store = createFileStore({ directory, agentId: identity.id })
   let executions = 0
   const execute = async () => { executions++; return { status: 'confirmed', receiptId: 'receipt-9' } }
   const result = await runWake({ identity, store: failingSaves(store, state => state.lastOutcome === 'acted'),
     authorize: async () => true, actionId: () => 'action-9', decide: async () => note,
     world: { observe: () => ({}), execute } })
-  assert.deepEqual(result, { outcome: 'uncertain', actionId: 'action-9', reason: 'receipt_not_persisted',
-    recorded: true, receipt: { actionId: 'action-9', receiptId: 'receipt-9', kind: 'note' } })
+  assert.deepEqual(result, { outcome: 'acted', actionId: 'action-9', wakes: 1, durable: false })
   const pending = (await store.load()).pendingAction
   assert.deepEqual(pending.receipt, { receiptId: 'receipt-9' })
-  assert.deepEqual(pending.error, { name: 'Error', code: 'ENOSPC' })
+  assert.equal(pending.reason, 'completion_pending')
   assert.equal((await readFile(join(directory, 'state.json'), 'utf8')).includes('secret'), false)
   await blockedWithoutObserving(store)
 
@@ -87,11 +86,12 @@ test('persistence failure after execution keeps the receipt and an uncertain out
   assert.equal(executions, 1)
 }))
 
-test('when no uncertain record can be written, the reservation still blocks and the receipt is returned', () => sandbox(async ({ directory }) => {
+test('when no receipt record can be written, the reservation still blocks and the receipt is returned', () => sandbox(async ({ directory }) => {
   const store = createFileStore({ directory, agentId: identity.id })
   const result = await runWake({ identity, store: failingSaves(store, state => state.lastOutcome !== 'pending'),
     authorize: async () => true, actionId: () => 'action-10', decide: async () => note,
     world: { observe: () => ({}), execute: async () => ({ status: 'confirmed', receiptId: 'receipt-10' }) } })
+  assert.equal(result.reason, 'completion_not_persisted')
   assert.equal(result.recorded, false)
   assert.equal(result.receipt.receiptId, 'receipt-10')
   assert.equal((await store.load()).pendingAction.status, 'pending')
@@ -189,4 +189,29 @@ test('v0.1.0 state and pending records remain readable and resolvable', () => sa
   assert.equal(result.resolution, 'confirmed')
   assert.deepEqual(await runWake({ identity, store, world: { observe: () => ({}) }, decide: async () => ({ kind: 'rest' }) }),
     { outcome: 'rest', wakes: 5 })
+}))
+
+test('a verifier that keeps failing cannot evict earlier reconciliation decisions', () => sandbox(async ({ directory }) => {
+  await mkdir(directory)
+  const decisions = Array.from({ length: 100 }, (_, index) => ({ actionId: 'old-' + index, kind: 'note',
+    previousStatus: 'uncertain', resolution: 'confirmed', receiptId: 'r-' + index, resolvedBy: 'operator-1', at: 'earlier' }))
+  await writeFile(join(directory, 'state.json'), JSON.stringify({ version: 1, agentId: identity.id, wakes: 1,
+    lastOutcome: 'uncertain', pendingAction: { id: 'stuck', status: 'uncertain', kind: 'note' },
+    lastReceipt: null, reconciliations: decisions }))
+  const store = createFileStore({ directory, agentId: identity.id })
+  for (let attempt = 0; attempt < 150; attempt++) {
+    assert.equal((await resolve(store, 'stuck', async () => { throw new Error('provider down') })).outcome, 'unresolved')
+  }
+  let history = (await store.load()).reconciliations
+  assert.equal(history.filter(entry => entry.resolution === 'confirmed').length, 100)
+  assert.equal(history.filter(entry => entry.resolution === 'unresolved').length, 20)
+  assert.ok(history.some(entry => entry.actionId === 'old-0'))
+
+  // Decisions are bounded too: the 101st evicts only the oldest decision.
+  await resolve(store, 'stuck', async ({ actionId }) => ({ status: 'not-executed', actionId, evidenceId: 'lookup' }))
+  history = (await store.load()).reconciliations
+  assert.equal(history.filter(entry => entry.resolution !== 'unresolved').length, 100)
+  assert.equal(history.some(entry => entry.actionId === 'old-0'), false)
+  assert.equal(history.findLast(entry => entry.resolution !== 'unresolved').actionId, 'stuck')
+  assert.equal((await resolve(store, 'old-1', () => assert.fail('must not verify'))).outcome, 'already-resolved')
 }))

@@ -3,14 +3,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import { join } from 'node:path'
 import { createFileStore, runWake, StateDurabilityError } from '../src/index.mjs'
-import { identity, sandbox } from './helpers.mjs'
+import { identity, injected, isTemporary, sandbox } from './helpers.mjs'
 
 // Fault injection patches the shared node:fs/promises object for one test
 // (t.mock restores it). These tests prove error handling and ordering; they
 // cannot prove what a real disk retains after power loss.
 const realOpen = fs.open
-const injected = code => Object.assign(new Error('injected ' + code), { code })
-const isTemporary = path => /\.state-[0-9a-f-]{36}\.tmp$/.test(String(path))
 
 function failOpenedHandle(t, match, method, code) {
   t.mock.method(fs, 'open', async (path, ...rest) => {
@@ -46,7 +44,8 @@ test('a failed directory fsync is reported, never treated as durable', t => sand
   const { store, next } = await seeded(directory)
   failOpenedHandle(t, path => path === directory, 'sync', 'EIO')
   await assert.rejects(store.save(next), error => error instanceof StateDurabilityError &&
-    error.code === 'STATE_DURABILITY_UNCONFIRMED' && error.unsupported === false && error.cause.code === 'EIO')
+    error.code === 'STATE_DURABILITY_UNCONFIRMED' && error.unsupported === false &&
+    error.replaced === true && error.cause.code === 'EIO')
   t.mock.restoreAll()
   assert.deepEqual(await fs.readdir(directory), ['state.json'])
 }))
@@ -58,6 +57,11 @@ test('unsupported directory fsync fails explicitly instead of silently downgradi
     return realOpen(path, ...rest)
   })
   await assert.rejects(store.save(next), error => error instanceof StateDurabilityError && error.unsupported === true)
+  // The lock barrier fails the same way before any wake work begins.
+  let observed = 0
+  await assert.rejects(runWake({ identity, store, decide: async () => ({ kind: 'rest' }),
+    world: { observe: () => { observed++; return {} } } }), error => error.unsupported === true && error.replaced === false)
+  assert.equal(observed, 0)
 }))
 
 test('a successful save fsyncs the file before rename and the directory after it', t => sandbox(async ({ directory }) => {
@@ -86,7 +90,7 @@ test('no external effect runs unless its reservation is durable', t => sandbox(a
   assert.equal(executions, 0)
 }))
 
-test('a non-durable completion after a real effect is uncertain, not acted', t => sandbox(async ({ directory }) => {
+test('a non-durable receipt record after a real effect is uncertain and blocking, not acted', t => sandbox(async ({ directory }) => {
   const { store } = await seeded(directory)
   let executions = 0
   const result = await runWake({ identity, store, authorize: async () => true, actionId: () => 'action-1',
@@ -97,7 +101,7 @@ test('a non-durable completion after a real effect is uncertain, not acted', t =
       return { status: 'confirmed', receiptId: 'receipt-1' }
     } } })
   assert.equal(result.outcome, 'uncertain')
-  assert.equal(result.reason, 'receipt_not_persisted')
+  assert.equal(result.reason, 'completion_not_persisted')
   assert.equal(result.receipt.receiptId, 'receipt-1')
   t.mock.restoreAll()
   assert.equal((await store.load()).pendingAction.id, 'action-1') // still blocks; never inferred done

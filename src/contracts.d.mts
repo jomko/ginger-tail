@@ -19,7 +19,14 @@ export interface WakeState {
   reconciliations?: ReconciliationRecord[]
 }
 
-export type UncertainReason = 'execution_failed' | 'receipt_invalid' | 'receipt_not_persisted'
+/** Why runWake returned `uncertain`. In every case the agent stays blocked on that action id. */
+export type UncertainReason = 'execution_failed' | 'receipt_invalid' | 'completion_not_persisted'
+
+/**
+ * Why a pending record is `uncertain`. `completion_pending`: the confirmed
+ * receipt is recorded (`receipt`) but the block was not durably cleared.
+ */
+export type PendingReason = 'execution_failed' | 'receipt_invalid' | 'completion_pending'
 
 export interface PendingAction {
   id: string
@@ -27,8 +34,8 @@ export interface PendingAction {
   status: 'pending' | 'uncertain'
   kind?: string
   at?: string
-  reason?: UncertainReason
-  /** Present when execution was confirmed but completion could not be persisted. */
+  reason?: PendingReason
+  /** The confirmed receipt, recorded before the block is cleared (two-phase completion). */
   receipt?: { receiptId: string }
   /** Bounded diagnostics only; never an exception message. */
   error?: { name: string; code?: string }
@@ -38,7 +45,7 @@ export interface ReconciliationRecord {
   actionId: string
   kind: string | null
   previousStatus: 'pending' | 'uncertain'
-  previousReason?: UncertainReason
+  previousReason?: PendingReason
   resolution: 'confirmed' | 'not-executed' | 'unresolved'
   reason?: string
   receiptId?: string
@@ -119,14 +126,38 @@ export interface WakePorts {
 }
 
 export type WakeResult =
-  | { outcome: 'rest' | 'denied' | 'acted'; wakes: number; actionId?: string }
+  | { outcome: 'rest' | 'denied'; wakes: number }
+  | {
+      outcome: 'acted'
+      actionId: string
+      wakes: number
+      /**
+       * Present only as `false`: the receipt IS durably recorded, but clearing
+       * the block was not confirmed durable. A later wake may report `blocked`
+       * for this id; resolve it with the receipt in `pendingAction.receipt`.
+       */
+      durable?: false
+    }
+  | {
+      /**
+       * The reservation was renamed into place but could not be confirmed
+       * durable. runWake did NOT call world.execute. The visible reservation
+       * blocks later wakes; after power loss it may be absent. It is never
+       * cleared automatically: resolve it as `not-executed`.
+       */
+      outcome: 'reservation_not_durable'
+      actionId: string
+    }
   | {
       outcome: 'uncertain'
       actionId: string
       reason: UncertainReason
-      /** Whether the uncertain record itself was durably saved. If false, the earlier reservation still blocks. */
+      /**
+       * Whether the uncertain record was confirmed durable. Either way the
+       * visible state blocks this action id (the reservation or the record).
+       */
       recorded: boolean
-      /** Present for `receipt_not_persisted`: keep it and pass it to reconciliation. */
+      /** Present for `completion_not_persisted`: the effect WAS confirmed. Keep it for reconciliation. */
       receipt?: { actionId: string; receiptId: string; kind: string }
     }
   | { outcome: 'blocked'; reason: 'unresolved_action'; actionId: string }

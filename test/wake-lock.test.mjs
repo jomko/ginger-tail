@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createFileStore, runWake, resolvePendingAction } from '../src/index.mjs'
-import { deadPid, effectLines, identity, linuxOnly, plantLock, runWorker, sandbox, startWorker } from './helpers.mjs'
+import { deadPid, effectLines, identity, linuxOnly, plantLock, plantOwner, runWorker, sandbox, startWorker } from './helpers.mjs'
 
 const rest = store => ({ identity, store, world: { observe: () => ({}) }, decide: async () => ({ kind: 'rest' }) })
 const lockFile = directory => join(directory, 'wake.lock')
@@ -95,13 +95,52 @@ test('uncertain lock ownership fails closed and leaves the lock byte-for-byte in
   assert.equal((await store.load()).wakes, 0)
 }))
 
-test('an abandoned recovery claim blocks recovery rather than racing it', { skip: linuxOnly }, () => sandbox(async ({ directory }) => {
+test('a recovery claim with unprovable ownership blocks recovery rather than racing it', { skip: linuxOnly }, () => sandbox(async ({ directory }) => {
   await mkdir(directory)
   const store = createFileStore({ directory, agentId: identity.id })
   const stale = await plantLock(directory, { pid: await deadPid() })
-  await writeFile(lockFile(directory) + '.recover-' + stale.token, '{}')
-  await assert.rejects(runWake(rest(store)), error => error.lock.reason === 'recovery_in_progress')
-  assert.equal(JSON.parse(await readFile(lockFile(directory), 'utf8')).token, stale.token)
+  const claim = lockFile(directory) + '.recover-' + stale.token
+  for (const plant of [() => writeFile(claim, '{}'), () => plantOwner(claim), () => plantOwner(claim, { hostname: 'other-host' })]) {
+    await plant()
+    const before = await readFile(claim, 'utf8')
+    await assert.rejects(runWake(rest(store)), error => error.lock.reason === 'recovery_in_progress')
+    assert.equal(JSON.parse(await readFile(lockFile(directory), 'utf8')).token, stale.token)
+    assert.equal(await readFile(claim, 'utf8'), before)
+  }
+}))
+
+test('recovery claims abandoned by dead recoverers are recovered, up to a bounded depth', { skip: linuxOnly }, () => sandbox(async ({ directory }) => {
+  await mkdir(directory)
+  const store = createFileStore({ directory, agentId: identity.id })
+  for (const levels of [1, 2, 3]) {
+    const stale = await plantLock(directory, { pid: await deadPid() })
+    let target = lockFile(directory)
+    let token = stale.token
+    for (let level = 0; level < levels; level++) {
+      target = `${target}.recover-${token}`
+      token = (await plantOwner(target, { pid: await deadPid() })).token
+    }
+    if (levels < 3) {
+      assert.deepEqual(await runWake(rest(store)), { outcome: 'rest', wakes: levels })
+      assert.deepEqual(await readdir(directory), ['state.json'])
+    } else {
+      await assert.rejects(runWake(rest(store)), error => error.lock.reason === 'recovery_in_progress')
+      assert.equal(JSON.parse(await readFile(lockFile(directory), 'utf8')).token, stale.token)
+    }
+  }
+}))
+
+test('concurrent processes recovering a stale lock and a dead claim never overlap', { skip: linuxOnly }, () => sandbox(async ({ root, directory, effects }) => {
+  await mkdir(directory)
+  const stale = await plantLock(directory, { pid: await deadPid() })
+  await plantOwner(lockFile(directory) + '.recover-' + stale.token, { pid: await deadPid() })
+  const marker = join(root, 'inside.marker')
+  const results = (await Promise.all(Array.from({ length: 6 }, () =>
+    runWorker(directory, 'contend', effects, marker)))).map(exit => exit.results[0])
+  assert.ok(results.some(result => result.outcome === 'rest'), JSON.stringify(results))
+  for (const result of results) assert.ok(result.outcome === 'rest' || result.error === 'WAKE_LOCKED', JSON.stringify(result))
+  assert.deepEqual(await effectLines(effects), [], 'two wakes overlapped')
+  assert.deepEqual(await readdir(directory), ['state.json'])
 }))
 
 test('two wakes in one process are mutually exclusive', () => sandbox(async ({ directory }) => {
@@ -152,4 +191,21 @@ test('cancellation is bounded before the reservation and never abandons an execu
     } } })
   assert.equal(result.outcome, 'acted')
   assert.equal(executions, 1)
+}))
+
+test('an abort while the lock or state is loading never invokes a port or leaks a rejection', () => sandbox(async ({ directory }) => {
+  const store = createFileStore({ directory, agentId: identity.id })
+  const controller = new AbortController()
+  const loading = { ...store, load: async () => { controller.abort(); return store.load() } }
+  const unhandled = []
+  const onUnhandled = reason => unhandled.push(reason)
+  process.on('unhandledRejection', onUnhandled)
+  let observed = 0
+  try {
+    await assert.rejects(runWake({ identity, store: loading, signal: controller.signal, decide: async () => ({ kind: 'rest' }),
+      world: { observe: async ({ signal }) => { observed++; signal.throwIfAborted() } } }), { name: 'AbortError' })
+    await new Promise(resolve => setTimeout(resolve, 20))
+  } finally { process.off('unhandledRejection', onUnhandled) }
+  assert.equal(observed, 0)
+  assert.deepEqual(unhandled, [])
 }))

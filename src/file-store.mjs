@@ -5,13 +5,17 @@ import { acquireWakeLock, inspectWakeLock, releaseWakeLock } from './wake-lock.m
 
 export { WakeLockError } from './wake-lock.mjs'
 
-const MAX_RECONCILIATIONS = 100
+// Retention for state.reconciliations (see resolvePendingAction).
+const MAX_DECISIONS = 100
+const MAX_UNRESOLVED_ATTEMPTS = 20
+const PENDING_REASONS = ['execution_failed', 'receipt_invalid', 'completion_pending']
 const UNSUPPORTED_SYNC = new Set(['EISDIR', 'EINVAL', 'ENOTSUP', 'EPERM', 'EBADF'])
 
-// A state change that cannot be confirmed durable. The new state may or may
-// not be visible on disk; callers must treat the write as uncertain.
+// Durability could not be confirmed. `replaced: true` means the new state
+// file was already renamed into place: it is VISIBLE, but may not survive
+// power loss. `replaced: false` means nothing was replaced.
 export class StateDurabilityError extends Error {
-  constructor(path, cause) {
+  constructor(path, cause, replaced = false) {
     const unsupported = UNSUPPORTED_SYNC.has(cause?.code)
     super(unsupported
       ? `Directory fsync is not supported for ${path}; refusing to claim durable state`
@@ -19,6 +23,7 @@ export class StateDurabilityError extends Error {
     this.name = 'StateDurabilityError'
     this.code = 'STATE_DURABILITY_UNCONFIRMED'
     this.unsupported = unsupported
+    this.replaced = replaced
   }
 }
 
@@ -33,11 +38,13 @@ function boundedText(value, max) {
 function validPendingAction(value) {
   return value === null || (typeof value === 'object' && !Array.isArray(value) &&
     ['pending', 'uncertain'].includes(value.status) && boundedText(value.id, 128) &&
+    (value.reason === undefined || PENDING_REASONS.includes(value.reason)) &&
     (value.receipt === undefined || boundedText(value.receipt?.receiptId, 200)))
 }
 
 function validReconciliations(value) {
-  return value === undefined || (Array.isArray(value) && value.length <= MAX_RECONCILIATIONS &&
+  return value === undefined || (Array.isArray(value) &&
+    value.length <= MAX_DECISIONS + MAX_UNRESOLVED_ATTEMPTS &&
     value.every(entry => entry && typeof entry === 'object' && boundedText(entry.actionId, 128) &&
       ['confirmed', 'not-executed', 'unresolved'].includes(entry.resolution)))
 }
@@ -54,13 +61,13 @@ function validateState(value, agentId) {
 }
 
 // Makes a completed rename (or a newly created entry) durable.
-async function syncDirectory(path) {
+async function syncDirectory(path, replaced = false) {
   let handle
   try {
     handle = await fs.open(path, 'r')
     await handle.sync()
   } catch (error) {
-    throw new StateDurabilityError(path, error)
+    throw new StateDurabilityError(path, error, replaced)
   } finally {
     await handle?.close().catch(() => {})
   }
@@ -95,6 +102,10 @@ export function createFileStore({ directory, agentId }) {
         for (const name of await fs.readdir(root)) {
           if (/^\.state-[0-9a-f-]{36}\.tmp$/.test(name)) await fs.rm(join(root, name), { force: true })
         }
+        // Durability barrier: what the callback loads is confirmed durable,
+        // never merely visible after an earlier failed fsync. It also makes
+        // an unsupported filesystem fail before any observation or effect.
+        await syncDirectory(root)
         return await callback()
       } finally {
         await releaseWakeLock(held)
@@ -132,7 +143,7 @@ export function createFileStore({ directory, agentId }) {
         await fs.rm(temporary, { force: true }).catch(() => {})
         throw error
       }
-      await syncDirectory(root)
+      await syncDirectory(root, true)
     },
   }
 }

@@ -7,7 +7,7 @@ export type {
   AgentIdentity, WakeState, Observation, ActionProposal, WakeDecision,
   ConfirmedActionReceipt, StatePort, WorldPort, CognitionPort,
   ActionPolicyPort, MemoryPort, ModelPort, WakePorts, WakeResult,
-  PendingAction, ReconciliationRecord, UncertainReason,
+  PendingAction, PendingReason, ReconciliationRecord, UncertainReason,
 } from './contracts.mjs'
 
 import type { AgentIdentity, PendingAction, StatePort, WakePorts, WakeResult } from './contracts.mjs'
@@ -46,6 +46,8 @@ export interface WakeLockDiagnostics {
   path: string
   claim?: string
   owner?: { token: string; pid: number; hostname: string; acquiredAt: string }
+  /** For `recovery_in_progress`: the holder of the blocking recovery claim, when readable. */
+  claimOwner?: { token: string; pid: number; hostname: string; acquiredAt: string }
 }
 
 export interface FileStatePort extends StatePort {
@@ -64,4 +66,10 @@ export declare class StateDurabilityError extends Error {
   readonly code: 'STATE_DURABILITY_UNCONFIRMED'
   /** True when the platform/filesystem cannot fsync a directory. */
   readonly unsupported: boolean
+  /**
+   * True when the new state file had already been renamed into place: it is
+   * visible but unconfirmed. False when nothing was replaced (including the
+   * barrier that withLock runs before its callback).
+   */
+  readonly replaced: boolean
 }

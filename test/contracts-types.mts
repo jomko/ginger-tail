@@ -77,7 +77,15 @@ async function reliabilityTypecheckOnly(store: FileStatePort): Promise<void> {
   if (wake.outcome === 'uncertain') {
     const recorded: boolean = wake.recorded
     const receiptId: string | undefined = wake.receipt?.receiptId
-    void [recorded, receiptId]
+    const reason: 'execution_failed' | 'receipt_invalid' | 'completion_not_persisted' = wake.reason
+    void [recorded, receiptId, reason]
+  } else if (wake.outcome === 'acted') {
+    const durable: false | undefined = wake.durable
+    const id: string = wake.actionId
+    void [durable, id]
+  } else if (wake.outcome === 'reservation_not_durable') {
+    const id: string = wake.actionId
+    void id
   }
   const resolved: ReconciliationResult = await resolvePendingAction({
     identity: { id: 'synthetic-cat' }, store, actionId: 'action-1', resolvedBy: 'operator',

@@ -7,13 +7,15 @@ import { hostname } from 'node:os'
 //   - acquisition: link(2) of a fully written owner file; EEXIST means held;
 //   - ownership: host, kernel boot, PID namespace, PID and process start time;
 //   - recovery: only a PROVABLY dead owner's lock is removed, under an
-//     exclusive per-token recovery claim, after re-reading the token.
+//     exclusive per-token recovery claim, after re-reading the token;
+//     a claim abandoned by a provably dead recoverer is recovered the same way.
 // Anything that cannot be proven (another host, another namespace, an
 // unreadable or legacy lock, a non-Linux host) fails closed and is left in place.
 // There is deliberately no time-based lease: a slow living owner keeps its lock.
 
 const LOCK_VERSION = 1
 const MAX_ACQUIRE_ATTEMPTS = 3
+const MAX_RECOVERY_DEPTH = 3
 const TOKEN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export class WakeLockError extends Error {
@@ -112,16 +114,30 @@ export async function inspectWakeLock(path) {
                                       hostname: owner.hostname, acquiredAt: owner.acquiredAt } }
 }
 
-// Removes a lock only if it still carries the stale token. The claim is
-// exclusive per token, so no second recoverer can delete a lock that
-// was re-acquired after this one removed the stale file.
-async function recover(path, staleToken, draft) {
+// Removes `path` only if it still carries the stale token. The claim is
+// exclusive per token (link EEXIST), so only one recoverer can be between
+// re-reading and unlinking; none can delete a file re-created after it.
+// A claim is itself an owner record, so a claim whose holder provably died
+// is removed by the same procedure one level down. Depth is bounded; a
+// live or unprovable holder always fails closed.
+async function recover(path, staleToken, draft, depth = 0) {
   const claim = `${path}.recover-${staleToken}`
-  try { await fs.link(draft, claim) } catch (error) {
-    if (error.code === 'EEXIST') {
-      throw new WakeLockError({ status: 'uncertain', reason: 'recovery_in_progress', path, claim })
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await fs.link(draft, claim)
+      break
+    } catch (error) {
+      if (error.code !== 'EEXIST') throw error
     }
-    throw error
+    const holder = await inspectWakeLock(claim)
+    if (holder.status === 'free' && attempt === 0) continue
+    if (holder.status !== 'stale' || depth + 1 >= MAX_RECOVERY_DEPTH || attempt > 0) {
+      throw new WakeLockError({ status: 'uncertain', reason: 'recovery_in_progress', path, claim,
+                                ...(holder.owner && { claimOwner: holder.owner }) })
+    }
+    await recover(claim, holder.owner.token, draft, depth + 1)
+    process.emitWarning(`Removed recovery claim abandoned by pid ${holder.owner.pid} (${holder.reason})`,
+      { code: 'GINGER_TAIL_STALE_LOCK' })
   }
   try {
     const raw = await readLock(path)
