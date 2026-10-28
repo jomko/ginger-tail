@@ -56,3 +56,25 @@ test('invalid cat transcript is rejected rather than silently erased', () => {
     rmSync(directory, { recursive: true, force: true })
   }
 })
+
+
+test('large multibyte history is bounded without cutting a message or resetting memory', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'ginger-tail-mochi-'))
+  try {
+    const first = run(directory, 'Hello')
+    assert.equal(first.status, 0, first.stderr)
+    const historyFile = join(directory, 'conversation.json')
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      role: index % 2 ? 'assistant' : 'user',
+      content: '🦊'.repeat(400),
+    }))
+    writeFileSync(historyFile, JSON.stringify(rows))
+    const next = run(directory, 'What do you remember?')
+    assert.equal(next.status, 0, next.stderr)
+    const updated = JSON.parse(readFileSync(historyFile, 'utf8'))
+    assert.equal(updated.at(-2).content, 'What do you remember?')
+    assert.equal(updated.length, 12)
+  } finally {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
