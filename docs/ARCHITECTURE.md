@@ -48,7 +48,7 @@ The **trusted host** is not optional for meaningful external actions. A validate
 - a `decide` callback returning rest or a bounded action proposal;
 - an explicit `authorize` callback (defaults to deny).
 
-The runtime loads durable state under a single-writer lock, observes, asks for one decision and either rests, denies, or attempts one authorized effect. It writes an action reservation **before** calling `world.execute`. Only a valid confirmed receipt completes the action. Any uncertain result leaves a pending record that blocks later wakes until the operator reconciles it.
+The runtime loads durable state under a single-writer lock, observes, asks for one decision and either rests, denies, or attempts one authorized effect. It writes an action reservation **before** calling `world.execute`. Only a valid confirmed receipt completes the action. Any uncertain result leaves a pending record that blocks later wakes until a trusted operator resolves it with `resolvePendingAction`. That function uses evidence from a host lookup of the exact action id and never retries the action. The file store's lock recovers automatically only from a provably dead owner. Its saves fsync both the file and the directory. See [Contracts](CONTRACTS.md#file-store-locking-and-durability).
 
 This prototype deliberately does **not** start a scheduler, talk to a model by itself, sandbox a host-supplied callback, or solve arbitrary distributed transactions.
 

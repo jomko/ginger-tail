@@ -13,8 +13,39 @@ export interface WakeState {
   agentId: string
   wakes: number
   lastOutcome: string | null
-  pendingAction: null | { id: string; status: 'pending' | 'uncertain'; kind?: string; at?: string }
+  pendingAction: null | PendingAction
   lastReceipt: null | { actionId: string; receiptId: string; kind: string }
+  /** Bounded (latest 100) audit trail written by resolvePendingAction. Absent in v0.1.0 state. */
+  reconciliations?: ReconciliationRecord[]
+}
+
+export type UncertainReason = 'execution_failed' | 'receipt_invalid' | 'receipt_not_persisted'
+
+export interface PendingAction {
+  id: string
+  /** `pending`: reserved, outcome unknown (possibly crashed). `uncertain`: outcome known to be unconfirmed. */
+  status: 'pending' | 'uncertain'
+  kind?: string
+  at?: string
+  reason?: UncertainReason
+  /** Present when execution was confirmed but completion could not be persisted. */
+  receipt?: { receiptId: string }
+  /** Bounded diagnostics only; never an exception message. */
+  error?: { name: string; code?: string }
+}
+
+export interface ReconciliationRecord {
+  actionId: string
+  kind: string | null
+  previousStatus: 'pending' | 'uncertain'
+  previousReason?: UncertainReason
+  resolution: 'confirmed' | 'not-executed' | 'unresolved'
+  reason?: string
+  receiptId?: string
+  evidenceId?: string
+  error?: { name: string; code?: string }
+  resolvedBy: string
+  at: string
 }
 
 export type Observation = unknown
@@ -29,7 +60,7 @@ export interface StatePort {
 }
 
 export interface WorldPort {
-  observe(input: { identity: AgentIdentity; state: WakeState }): Promise<Observation> | Observation
+  observe(input: { identity: AgentIdentity; state: WakeState; signal?: AbortSignal }): Promise<Observation> | Observation
   execute?(input: {
     identity: AgentIdentity
     action: ActionProposal
@@ -41,6 +72,7 @@ export type CognitionPort = (input: {
   identity: AgentIdentity
   observation: Observation
   state: WakeState
+  signal?: AbortSignal
 }) => Promise<WakeDecision> | WakeDecision
 
 export type ActionPolicyPort = (input: {
@@ -48,6 +80,7 @@ export type ActionPolicyPort = (input: {
   action: ActionProposal
   observation: Observation
   state: WakeState
+  signal?: AbortSignal
 }) => Promise<boolean> | boolean
 
 /**
@@ -78,11 +111,24 @@ export interface WakePorts {
   authorize?: ActionPolicyPort
   now?: () => string
   actionId?: () => string
+  /**
+   * Cancels waiting on observe/decide/authorize. Never honored once the
+   * action reservation is persisted: an execution is never abandoned.
+   */
+  signal?: AbortSignal
 }
 
 export type WakeResult =
   | { outcome: 'rest' | 'denied' | 'acted'; wakes: number; actionId?: string }
-  | { outcome: 'uncertain'; actionId: string }
+  | {
+      outcome: 'uncertain'
+      actionId: string
+      reason: UncertainReason
+      /** Whether the uncertain record itself was durably saved. If false, the earlier reservation still blocks. */
+      recorded: boolean
+      /** Present for `receipt_not_persisted`: keep it and pass it to reconciliation. */
+      receipt?: { actionId: string; receiptId: string; kind: string }
+    }
   | { outcome: 'blocked'; reason: 'unresolved_action'; actionId: string }
 
 export declare function assertAgentIdentity(identity: unknown): void

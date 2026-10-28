@@ -1,5 +1,5 @@
-export { runWake } from './wake.mjs'
-export { createFileStore } from './file-store.mjs'
+export { runWake, resolvePendingAction } from './wake.mjs'
+export { createFileStore, StateDurabilityError, WakeLockError } from './file-store.mjs'
 export {
   WAKE_CONTRACT_VERSION, MAX_ACTION_BYTES, MAX_OBSERVATION_BYTES,
   assertAgentIdentity, assertWakePorts, parseWakeDecision,

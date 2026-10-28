@@ -54,9 +54,68 @@ observe
        no  -> quarantine uncertain; block later wakes
 ~~~
 
-The confirmed receipt has `{ status: 'confirmed', receiptId: '...' }` with a valid bounded ID. Missing, malformed, failing or uncertain receipts **do not** count as success. No blind automatic retry is permitted. A pending action requires manual reconciliation.
+The confirmed receipt has `{ status: 'confirmed', receiptId: '...' }` with a valid bounded ID. Missing, malformed, failing or uncertain receipts **do not** count as success. No blind automatic retry is permitted. A pending action requires explicit reconciliation (below).
 
-`createFileStore` is single-host local storage. Do not treat it as a distributed transaction coordinator.
+An `uncertain` result carries a `reason` and whether the uncertain record was durably `recorded`:
+
+| `reason` | Meaning |
+| --- | --- |
+| `execution_failed` | `world.execute` threw; the effect may or may not have happened |
+| `receipt_invalid` | `world.execute` returned no valid confirmed receipt |
+| `receipt_not_persisted` | The effect **was** confirmed, but completion could not be saved. The result includes `receipt`; keep it |
+
+If `recorded` is `false`, the reservation saved before execution still blocks later wakes. Pending records store only bounded diagnostics (`error.name`, `error.code`), never exception messages.
+
+`signal` (an `AbortSignal`) cancels waiting on `observe`, `decide` and `authorize`. It is **not** honored after the reservation is persisted: Tail never abandons an execution in flight.
+
+### Reconciling a pending action
+
+A `pending` or `uncertain` action blocks every later wake until a trusted host or operator resolves it. Tail never decides this on its own, never infers success or failure from missing state, and never retries the action.
+
+~~~js
+import { resolvePendingAction } from 'ginger-tail'
+
+const result = await resolvePendingAction({
+  identity, store,
+  actionId: blocked.actionId,         // exact id; any other id is rejected
+  resolvedBy: 'operator:alice',       // audit identity, not an authorization
+  verify: async ({ actionId }) => {   // trusted lookup in the external system
+    const found = await externalSystem.findByIdempotencyKey(actionId)
+    return found
+      ? { status: 'confirmed', actionId, receiptId: found.id }
+      : { status: 'not-executed', actionId, evidenceId: 'lookup-2026-10-28' }
+  },
+})
+// { outcome: 'resolved' | 'already-resolved' | 'unresolved', ... }
+~~~
+
+- The result comes **only** from `verify`'s evidence: `confirmed` needs a valid `receiptId`; `not-executed` needs an `evidenceId`. Both must echo the exact `actionId`. Anything else, including an authorization claim such as `{ authorized: true }` or a thrown error, gives `unresolved` and the block stays.
+- If the wake captured a receipt (`receipt_not_persisted`), only a `confirmed` verdict with **that** `receiptId` resolves it.
+- Return `not-executed` only when the external system guarantees that this action id can no longer take effect. A request still in flight that lands later would be a duplicate. Tail cannot detect that.
+- Every attempt, resolved or not, is appended to `state.reconciliations` (the latest 100 are kept). A repeat call for a resolved id returns `already-resolved` without calling `verify`.
+- It runs under the same wake lock, so it cannot interleave with a wake. Never expose it to a model.
+
+### File store: locking and durability
+
+`createFileStore` is single-host local storage. Do not treat it as a distributed transaction coordinator, and do not share one state directory between hosts or containers.
+
+**Lock.** `wake.lock` is created atomically with `link(2)` from a fully written owner file (token, host, machine id, boot id, PID namespace, PID, process start time). The lock has no time-based lease, so a slow living process keeps it. An existing lock is removed automatically only when its owner is **provably** gone:
+
+| Evidence | Verdict |
+| --- | --- |
+| Same host, boot and PID namespace; PID no longer exists or is a zombie | stale, recovered |
+| Same host, boot and PID namespace; PID exists with a different start time (PID reuse) | stale, recovered |
+| Same host name and machine id, different boot id (the host rebooted) | stale, recovered |
+| PID exists with the same start time, or its start time cannot be read | live, refused |
+| Other host name, other PID namespace, other machine, non-Linux host, malformed or v0.1.0 lock file | uncertain, refused and left intact |
+
+Recovery takes an exclusive per-token claim (`wake.lock.recover-<token>`), then re-reads the token before deleting, so concurrent recoverers cannot delete a lock that was re-acquired in between. If a recoverer dies inside that short window, the claim stays and recovery fails closed (`recovery_in_progress`) until an operator removes it. A refused acquisition throws `WakeLockError` (`code: 'WAKE_LOCKED'`, message still contains `already locked`) with diagnostics in `error.lock`. `store.inspectLock()` reports the same diagnostics without changing anything. A recovered lock emits a `GINGER_TAIL_STALE_LOCK` process warning.
+
+Before removing a lock by hand, confirm with `inspectLock()` and the process table that no wake is running.
+
+**Durability.** `save` writes and fsyncs a `0600` temporary file, renames it over `state.json`, then fsyncs the directory. Newly created state directories are fsynced into their parents. On any failure the temporary file is removed and the previous `state.json` stays as it was. A directory fsync that fails, or is unsupported by the platform (for example on Windows), throws `StateDurabilityError` (`code: 'STATE_DURABILITY_UNCONFIRMED'`, `unsupported: true|false`). There is no silent downgrade. When this happens before execution, `runWake` does not execute. When it happens after execution, the wake reports `uncertain`.
+
+Tests inject faults into each filesystem step and kill real processes with `SIGKILL`. They do **not** prove what a given disk, controller or network filesystem keeps after power loss. That needs power-cut testing on the target hardware.
 
 ## 2. Model, cognition, and journey
 
