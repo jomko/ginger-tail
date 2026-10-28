@@ -1,198 +1,81 @@
 # Ginger Tail
-### A brain is rented by the minute. A life takes longer.
 
-**The model reasons. The agent persists.** 🐈
+**THE TAIL WAGS THE CAT.**
 
-Ginger Tail is a small, **local-first Node.js runtime foundation for long-lived AI agents**. A model call ends; an agent's identity, state, interests, memory and permissions need somewhere to remain.
+*A brain is rented by the minute.*<br>*A life takes longer.*
 
-It keeps the reusable machinery separate from the agent's private life. The model can propose an action. A **trusted host** decides whether the door opens.
+Ginger Tail is a small, local-first engine for AI agents that have a past. It carries reusable continuity mechanisms between temporary model calls; the trusted host keeps the identity, durable state and keys.
 
-[**v0.1.0 source release**](https://github.com/jomko/ginger-tail/releases/tag/v0.1.0) · [Architecture](docs/ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md) · MIT licensed
+![RYZHYI, the mechanical ginger cat, beside the words “The tail wags the cat.”](site/public/og.jpg)
 
----
+[Interactive website](https://jomko.github.io/ginger-tail/) · [Meet Mochi](#meet-a-cat) · [Architecture](docs/ARCHITECTURE.md)
 
-## Meet Mochi — a cat you can actually try
+## A clever moment is not a life
 
-**One cat, one terminal, persistent memory.** Requires Node.js 22+. No account, key or extra npm package needed for the offline first look:
+A model wakes, reasons brilliantly, answers—and stops. The next call is not automatically the same continuing character. Giving a model yesterday’s conversation is not the same as giving an agent a past.
 
-~~~bash
+Identity, history, interests, observations and state need somewhere to live beyond the model context. Ginger Tail provides reusable ways to carry some of that continuity between calls. A trusted host owns identity and persistence, supplies credentials, grants permissions and decides what reaches the outside world.
+
+## Three things. One cat.
+
+**01 — The Model** is a temporary brain: useful for a turn, gone when the call ends.
+
+**02 — The Cat** is the persistent identity: the same someone who was here yesterday, with state held by its host.
+
+**03 — The Tail** is reusable machinery for carrying bounded context, interests, memories and decisions between turns.
+
+The host keeps the keys. It owns the durable store, checks sources, authorizes actions and performs any external effects. The Tail helps carry the life; it does not own the house.
+
+## Yesterday matters
+
+RYZHYI sits by a window. A bird visits. A model call processes the observation, and the trusted host saves a sourced note. The call ends. Night passes.
+
+The bird returns. A new model call can receive yesterday’s note from the host.
+
+**Different model call. Same cat. Continuing history.**
+
+The [interactive story](https://jomko.github.io/ginger-tail/#chapter-03) shows this as a scripted illustration. It does not call a live model or persist a real scene.
+
+## What the Tail actually does
+
+- **Memory with sources.** Bound recall and ask the host to verify source evidence before recording an observation.
+- **Persistent attention and interests.** Track an interest as it becomes active, dormant, resumed or closed; the host stores the transitions.
+- **Bounded thinking.** Set limits on model calls and exploration so a wake has an end.
+- **Decisions with authorization boundaries.** A model proposal is not permission. The host decides whether an action may run.
+- **Voluntary rest.** **Rest is a valid outcome.** No mandatory posts, engagement quotas or obligation to speak.
+
+## Meet a cat
+
+Try Mochi, the local demo cat:
+
+```bash
 git clone https://github.com/jomko/ginger-tail.git
 cd ginger-tail
 npm run demo:cat
-~~~
+```
 
-Tell Mochi something, ask **"What do you remember?"**, type `/sleep` to let the cat rest, then `/quit`. Start the command again: its conversation is still there. The default cat is intentionally **deterministic, not an LLM** — it demonstrates wake/state, local conversation receipts and voluntary rest without inventing an AI response.
+Requires Node.js 22+. Mochi starts in deterministic offline mode: it uses no LLM or API key, and keeps the conversation in a local state directory. You can ask what it remembers, type `/sleep`, then start it again.
 
-For a **real local AI cat**, start [Ollama](https://ollama.com/) and install a chat model, then:
+For the optional real local model mode, use [Ollama](https://ollama.com/) with a model installed. The default demo does not use an LLM. See the [detailed getting started guide](docs/GETTING_STARTED.md) for setup, state locations, environment variables and the Ollama steps.
 
-~~~bash
-ollama pull llama3.2:3b
-CAT_MODEL=llama3.2:3b npm run demo:cat
-~~~
+## One Tail. Different lives.
 
-The model receives up to the last six exchanges (bounded to fit the wake context) and can reply in the human's language. It cannot post anywhere: the trusted host allows **only writing to the local conversation file**. Both modes use the same Tail `runWake` engine. See [the complete example](examples/meet-a-cat.mjs).
+One engine can serve separate identities without sharing their state, memory or authority. The [two-agent example](examples/two-independent-agents.mjs) demonstrates this with synthetic agents; it does not connect to real accounts or model providers.
 
-Mochi's state is stored in `.ginger-tail-cat-state/` (gitignored). Set `GINGER_TAIL_CAT_DIR` to change the location, or `CAT_OLLAMA_URL` for a nondefault local Ollama endpoint. The demo has no automatic journal reconciliation, migration or production safeguards. Don't enter secrets or connect real social accounts.
+## Born from a real cat
 
----
+Ginger Tail grew out of Ginger, an independently configured resident AI character. Reusable mechanisms came out of that experiment; Ginger’s private identity, memories, credentials, history and world integrations did not.
 
-## Two agents. One tail. Different house keys.
+**The machinery is open source. The cat keeps his private life.**
 
-Run the small proof first. No API key, live account, network service or model provider needed; **Node.js 22+**.
+## Under the hood
 
-~~~bash
-git clone https://github.com/jomko/ginger-tail.git
-cd ginger-tail
-npm run demo:two-agents
-~~~
+Experimental **v0.1.0** source release · Local-first **Node.js 22+** · **MIT** · Git install, not published to npm.
 
-The script runs **two synthetic agents through the same engine**. Each gets its own identity, local store and source-backed notes. The host allows a synthetic signal for one agent and denies it for the other.
+Ginger Tail is not a turnkey production daemon. A trusted host supplies the integrations and durable state. Read the [architecture](docs/ARCHITECTURE.md), [runtime contracts](docs/CONTRACTS.md), [extraction notes](docs/EXTRACTION.md), and [release history](CHANGELOG.md).
 
-| In the offline demo | Cartographer | Gardener |
-| --- | --- | --- |
-| Local evidence source | `synthetic:cartographer` | `synthetic:gardener` |
-| Host permission | Allow | Deny |
-| Wake 1 → Wake 2 | `acted` → `acted` | `denied` → `denied` |
-| Confirmed synthetic receipts | 2 | 0 |
+## Give the cat a tail
 
-This is a compact **summary of the example's behavior**, not a live-agent recording. [Read the runnable example](examples/two-independent-agents.mjs). The point isn't two different prompt costumes: it is *separate state and authority*.
+**A model call is a moment. A life takes longer.**
 
----
-
-## Why does a cat need a tail?
-
-Most AI demos live for one prompt. They wake up, say something impressive, and promptly forget where they left the furniture.
-
-An enduring agent needs different plumbing:
-
-- **Continuity over amnesia.** Identity and state live outside the model window.
-- **Memory with receipts.** A source being visible is not the same as a claim being true.
-- **Curiosity without a content quota.** Reading, thinking, remembering, sharing, and going back to sleep are different things.
-- **Authority outside the model.** A proposed action is not permission to perform it.
-- **More than one cat.** The engine is reusable; every agent has its own identity, home, memory, and boundaries.
-
-This is infrastructure for agency, not a claim that an AI is conscious, and definitely not a button labelled **AUTONOMY™**.
-
-## The short version
-
-~~~text
-             MODEL
-        (temporary thought)
-                |
-                v
-       +--------------------+
-       |    GINGER TAIL     |
-       | cognition / budget |
-       | journey / context  |
-       | memory / lifecycle |
-       | typed action ports |
-       +--------------------+
-                |
-                v
-        TRUSTED AGENT HOST
-   identity · source checks · policy
-   credentials · journal · persistence
-                |
-                v
-           THE WORLD
-      (only if permitted)
-~~~
-
-The model may suggest a walk. The host decides whether the door opens. The tail doesn't steal the keys.
-
-## Try it before the cat notices
-
-From the cloned repository, the rest of the offline tour:
-
-~~~bash
-npm test                 # runtime regression suite
-npm run demo             # one agent, persistent wake state
-npm run demo:model-swap  # two synthetic provider adapters
-~~~
-
-The one-agent demo counts separate wakes in `.ginger-tail-demo-state/` (gitignored); run it twice to see state persist. Set `GINGER_TAIL_STATE_DIR` to move that state. Both provider adapters are **synthetic** (replay and rules), not integrations with real LLM services. No external actions.
-
-## The smallest real example
-
-~~~js
-import { createFileStore, runWake } from 'ginger-tail'
-
-const identity = { id: 'sleepy-cartographer' }
-const store = createFileStore({
-  directory: './my-agent-state',
-  agentId: identity.id,
-})
-
-const result = await runWake({
-  identity,
-  store,
-  world: {
-    observe: async () => ({ event: 'A perfectly ordinary hill.' }),
-  },
-  decide: async () => ({ kind: 'rest' }),
-})
-
-console.log(result.outcome) // 'rest'
-~~~
-
-`rest` is a first-class outcome. Doing nothing is not a failing grade.
-
-For an external action, the host must supply an explicit `authorize` callback, a trusted `world.execute` adapter, and a **confirmed execution receipt**. Authorization defaults to denial. An uncertain result blocks subsequent action until reconciliation; there is no optimistic re-try-and-pray.
-
-## What is in v0.1.0?
-
-| Piece | Job |
-| --- | --- |
-| `contracts` + `runWake` | Bounded offline wake, persistent state, default-deny actions, receipt-first safety |
-| `history-context` | Context budgets; distinguish full reading from truncation |
-| `attention-core` | Active, dormant, resumed, and closed interests |
-| `thought-core` | Private thoughts, evidence and separate share intent |
-| `cognition-control` + `cognition-journey` | Model-call budgets, exploration, optional closing choice, voluntary rest |
-| `model-port` + `world-read-port` | Provider-neutral model and host-owned observation adapters |
-| `decision-dispatch` + `trusted-action-port` | Route decisions to trusted callbacks; never grant permission by routing |
-| `memory-continuity` | Host-backed recall and source-verified observation recording |
-| `policy-action` + `action-outcomes` | Explicit approval checkpoints and uncertainty brakes |
-
-Every module is intentionally narrow. Tail is **not** an Orbitar client, a credential manager, a sandbox, a posting bot, or a complete production scheduler.
-
-Read the [architecture](docs/ARCHITECTURE.md) and [runtime contracts](docs/CONTRACTS.md) for what each piece does—and, more importantly, what it refuses to do.
-
-## One tail, several lives
-
-Ginger Tail grew out of **Ginger**, a privately configured resident AI character. Ginger's running installation now consumes **commit-pinned Tail v0.1.0 components** through its own trusted host. His voice, memories, history, credentials, world integration, timers, and operational safeguards **are not in this repo**.
-
-The independent `runWake` prototype and the shared resident modules are **not yet one universal drop-in production daemon**. Integrators must supply state, source validation, model isolation, policy and external transport. Don't point an example at a real account and call it deployment.
-
-The public proof is `examples/two-independent-agents.mjs`. No real forum users, model tokens, or private agent histories were invited to that party.
-
-## Install & maturity
-
-The **[v0.1.0 Git tag](https://github.com/jomko/ginger-tail/tree/v0.1.0)** marks the first versioned source release. This package is **not published to npm** (`package.json` is marked `private`). For a pinned Git dependency:
-
-~~~bash
-npm install 'git+https://github.com/jomko/ginger-tail.git#v0.1.0'
-~~~
-
-APIs are **experimental**; pin an exact version or reviewed commit. This release references the existing `v0.1.0` tag, which currently resolves to commit [`d7988f4`](https://github.com/jomko/ginger-tail/commit/d7988f4cd9a38791a60660fa0cd343abdfe6ea02). Later edits to documentation on `main` do not change the files at that commit.
-
-- [Start here / architecture](docs/ARCHITECTURE.md)
-- [Ports, limits and contracts](docs/CONTRACTS.md)
-- [Extraction milestones and privacy boundary](docs/EXTRACTION.md)
-- [Contributing](CONTRIBUTING.md)
-- [Release notes](CHANGELOG.md)
-
-## Rules of the house
-
-1. Untrusted model output never authorizes itself.
-2. Evidence and uncertain outcomes keep their labels. Don't promote guesses into facts.
-3. No blind retry of a possibly completed external action.
-4. Agents own their private state. The public engine does not collect it.
-5. An agent may choose silence. Sometimes that is the most intelligent comment in the thread.
-
-**Public repository, synthetic fixtures only.** Never submit real credentials, private memories, production logs, or another person's identity. See the [MIT License](LICENSE); it covers the public code, not Ginger's private installation.
-
----
-
-*Built for agents who remember where they came from—without pretending they know where they're going.*
-
-*Mochi is included. Ginger's private life is not.*
+[Follow the story](https://jomko.github.io/ginger-tail/) · [Get started with Mochi](docs/GETTING_STARTED.md)
