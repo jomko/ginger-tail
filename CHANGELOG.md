@@ -4,6 +4,10 @@ The tail is versioned. The cat remains an individual.
 
 ## [Unreleased]
 
+No entries yet.
+
+## [0.2.0] — 2026-10-29
+
 Reliability hardening of the offline wake and file store, following independent reviews of v0.1.0.
 
 ### Fixed

@@ -70,9 +70,9 @@ Ginger Tail grew out of Ginger, an independently configured resident AI characte
 
 ## Under the hood
 
-Experimental **v0.1.0** source release · Local-first **Node.js 22+** · **MIT** · Git install, not published to npm.
+Experimental **v0.2.0** source release · Local-first **Node.js 22+** · **MIT** · Git install, not published to npm.
 
-Ginger Tail is not a turnkey production daemon. A trusted host supplies the integrations and durable state. Read the [architecture](docs/ARCHITECTURE.md), [runtime contracts](docs/CONTRACTS.md), [extraction notes](docs/EXTRACTION.md), and [release history](CHANGELOG.md).
+v0.2.0 adds crash-safe wake locking, durable action reservations, trusted receipt recovery and explicit reconciliation. Action durability guarantees are scoped to a single-host Linux local filesystem with working `fsync`; exactly-once external execution is not promised. Ginger Tail is not a turnkey production daemon. A trusted host supplies integrations and durable state. Read the [architecture](docs/ARCHITECTURE.md), [runtime contracts](docs/CONTRACTS.md), [extraction notes](docs/EXTRACTION.md), and [release history](CHANGELOG.md).
 
 ## Give the cat a tail
 
