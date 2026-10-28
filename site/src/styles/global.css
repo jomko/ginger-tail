@@ -70,13 +70,16 @@ h1 { margin-bottom: 23px; font-weight: 800; letter-spacing: -.085em; line-height
 h1 > span, h1 > em { display: block; }
 h1 > span { font-size: clamp(74px, 7.3vw, 124px); }
 h1 > em { margin-top: .12em; color: var(--copper); font-size: clamp(46px, 4.9vw, 82px); font-style: normal; white-space: nowrap; }
-.opening-dek { margin: 0 0 32px; color: var(--paper); font-size: clamp(19px, 1.7vw, 25px); line-height: 1.38; letter-spacing: -.035em; }
+.opening-dek { margin: 0 0 32px; color: var(--paper); line-height: 1.16; letter-spacing: -.04em; }
+.opening-dek > span, .opening-dek > em { display: block; }
+.opening-dek > span { font-size: clamp(23px, 2vw, 30px); font-weight: 600; }
+.opening-dek > em { margin-top: 7px; color: var(--copper); font-size: clamp(18px, 1.55vw, 23px); font-style: italic; letter-spacing: -.025em; }
 .text-link { display: inline-flex; align-items: center; gap: 22px; padding: 11px 0; border-bottom: 1px solid #766b5e; font-size: 14px; font-weight: 600; transition: gap .3s cubic-bezier(.2,.8,.2,1), color .2s ease; }
 .text-link .link-arrow { transition: translate .3s cubic-bezier(.2,.8,.2,1); }
 .text-link:hover .link-arrow, .text-link:focus-visible .link-arrow { translate: 4px -3px; }
 .text-link:hover, .text-link:focus-visible { gap: 31px; color: var(--copper); }
 .link-arrow { color: var(--copper); }
-.hero-cat { min-width: 0; margin: 0; }
+.hero-cat { position: relative; left: -14%; width: 120%; min-width: 0; margin: 0; }
 .hero-cat img { display: block; width: 100%; height: auto; }
 .opening-foot { display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; padding-top: 16px; border-top: 1px solid var(--line-dark); color: #b0a89b; font: 10px/1.3 var(--mono); letter-spacing: .07em; }
 .opening-foot > span:nth-child(2) { color: var(--copper); }
@@ -161,6 +164,7 @@ pre { max-width: 100%; margin: 0 0 18px; padding: 18px; overflow-x: auto; backgr
 }
 @media (max-width: 900px) {
   .opening-grid { grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 25px; }
+  .hero-cat { left: -8%; width: 108%; }
   h1 > span { font-size: clamp(68px, 7.3vw, 92px); }
   h1 > em { font-size: clamp(46px, 4.9vw, 64px); }
   .cast-heading h2, .story-heading h2, .get-heading h2 { font-size: clamp(54px, 8vw, 78px); }
@@ -180,12 +184,14 @@ pre { max-width: 100%; margin: 0 0 18px; padding: 18px; overflow-x: auto; backgr
   .opener .chapter-index { margin-bottom: 26px; }
   .opening-grid { flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; gap: 20px; padding: 0 0 22px; }
   .opening-copy { padding-top: 0; }
+  .hero-cat { left: auto; width: auto; }
   .overline { margin-bottom: 15px; font-size: 9px; }
   h1 { margin-bottom: 12px; }
   h1 > span { font-size: clamp(60px, 15vw, 88px); }
   h1 > em { margin-top: .1em; font-size: clamp(39px, 11.6vw, 66px); }
-  .opening-dek { margin-bottom: 14px; font-size: 17px; line-height: 1.32; }
-  .opening-dek br { display: none; }
+  .opening-dek { margin-bottom: 14px; line-height: 1.2; }
+  .opening-dek > span { font-size: clamp(21px, 5.6vw, 24px); }
+  .opening-dek > em { margin-top: 5px; font-size: clamp(17px, 4.5vw, 19px); }
   .opening-copy .text-link { min-height: 40px; padding-block: 8px; font-size: 12px; }
   .opening-foot { padding-top: 11px; font-size: 8px; }
   .cast, .yesterday, .get-tail { padding-top: 58px; padding-bottom: 64px; }
