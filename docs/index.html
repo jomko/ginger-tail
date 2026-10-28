@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f4ec">
+  <meta name="description" content="Ginger Tail is a tiny, local-first foundation for long-lived AI agents. Explore the anatomy of a cat that remembers, thinks, chooses, and rests.">
+  <meta property="og:title" content="Ginger Tail — The model thinks. The cat stays.">
+  <meta property="og:description" content="A little engine for persistent AI lives. Explore the anatomy, try a safe browser simulation, and meet Mochi.">
+  <meta property="og:type" content="website">
+  <title>Ginger Tail — The model thinks. The cat stays.</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%231e2828'/%3E%3Cpath d='M15 32 19 15l13 10 13-10 4 17c5 22-39 22-34 0Z' fill='%23efb080'/%3E%3Ccircle cx='25' cy='35' r='2.5'/%3E%3Ccircle cx='39' cy='35' r='2.5'/%3E%3C/svg%3E">
+  <style>
+    :root{--paper:#f7f4ec;--ink:#25312f;--sub:#65706b;--rust:#d16c4c;--rust-2:#e9ad7d;--sage:#ced8c6;--line:#d8d7cb;--white:#fffcf6;--dark:#20302c;--dark-light:#31423b;--sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--serif:Georgia,"Times New Roman",serif}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}a{color:inherit}button,input{font:inherit}button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible,[role="button"]:focus-visible{outline:3px solid #ed9f73;outline-offset:4px}::selection{background:#f3bd9b;color:#202924}
+    .wrap{width:min(1240px,calc(100% - 72px));margin-inline:auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:18px;height:86px;border-bottom:1px solid var(--line)}.brand{display:inline-flex;align-items:center;gap:10px;font-size:15px;font-weight:800;letter-spacing:-.04em;text-decoration:none}.brand-mark{width:37px;height:37px;display:grid;place-items:center;background:var(--dark);border-radius:11px;color:var(--rust-2)}.brand-mark svg{width:24px;height:24px}.toplinks{display:flex;align-items:center;gap:28px;font-size:13px;font-weight:650}.toplinks a{text-decoration:none;opacity:.8}.toplinks a:hover,.foot a:hover{text-decoration:underline;text-underline-offset:4px}.toplinks .top-github{opacity:1;border:1px solid var(--ink);border-radius:99px;padding:11px 17px}
+    .eyebrow{display:flex;align-items:center;gap:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:800;font-size:10px;color:var(--sub)}.eyebrow .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--rust)}
+    .hero{padding:75px 0 62px;display:grid;grid-template-columns:minmax(0,.93fr) minmax(0,1.07fr);align-items:center;gap:50px}.hero h1{font-family:var(--serif);font-size:clamp(59px,6.4vw,100px);font-weight:400;line-height:.99;letter-spacing:-.072em;margin:27px 0 26px;max-width:660px}.hero h1 em{font-weight:400;color:var(--rust);font-style:italic}.hero p{font-size:17px;line-height:1.75;max-width:475px;color:#53605a;margin:0 0 31px}.hero-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:12px 21px;border-radius:99px;text-decoration:none;font-size:13px;font-weight:750;transition:transform .2s,background .2s}.btn:hover{transform:translateY(-2px)}.btn.primary{background:var(--dark);color:var(--white);border:1px solid var(--dark)}.btn.secondary{border:1px solid #aeb7ad;background:transparent}.hero-note{margin-top:24px;font-family:var(--serif);font-style:italic;font-size:15px;color:#68766c}
+    .diagram{position:relative;background:#f0ecdf;border:1px solid #ded8c9;border-radius:21px;overflow:hidden;box-shadow:0 16px 40px #3a4c3420}.diagram::before{content:"";position:absolute;inset:0;opacity:.3;pointer-events:none;background-image:radial-gradient(#879d8d 1px,transparent 1px);background-size:18px 18px}.diagram-top{position:absolute;z-index:1;top:22px;left:25px;right:25px;display:flex;align-items:center;justify-content:space-between;gap:12px;pointer-events:none}.diagram-top span{font-size:9px;font-weight:800;letter-spacing:.15em;color:#586b60}.diagram-top strong{font-size:10px;font-weight:800;border:1px solid #bec6ba;background:#f6f3e9;padding:6px 9px;border-radius:99px;white-space:nowrap}.mechanism{display:block;width:100%;height:auto;position:relative}.diagram-bottom{position:absolute;bottom:16px;left:23px;right:23px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;font-weight:750;letter-spacing:.08em;color:#698075;pointer-events:none}.diagram .wire{stroke:#b8bcb0;stroke-width:1.4;stroke-dasharray:4 7;fill:none}.diagram .main-line{stroke:#8d9f92;stroke-width:2;fill:none}.diagram .plate{fill:#f7f2e7;stroke:#9da99c;stroke-width:2}.diagram .bolt{fill:#e5ab83;stroke:#506054;stroke-width:1.7}.diagram .fine{fill:none;stroke:#71887a;stroke-width:2}.diagram .cat-shell{fill:#cbd6c7;stroke:#40594e;stroke-width:3.2}.diagram .cat-parts{fill:#f0d5b7;stroke:#40594e;stroke-width:2.6}.diagram .component{cursor:pointer;outline:none;transform-box:fill-box;transform-origin:center;transition:filter .25s,opacity .25s}.diagram .component:hover,.diagram .component:focus-visible,.diagram .component.is-active{filter:drop-shadow(0 3px 5px #b56c443f)}.diagram .component .hit{fill:transparent;stroke:transparent;stroke-width:18}.diagram .component.is-active .part-body,.diagram .component:hover .part-body{stroke:#d36d4b;stroke-width:3}.diagram .component text{fill:#2c4238;font-family:var(--sans);font-weight:800;font-size:13px;letter-spacing:.01em;paint-order:stroke;stroke:#f0ecdf;stroke-width:3px;stroke-linejoin:round}.diagram .component .index{font-size:9px;letter-spacing:.12em;fill:#8b9a8d}.diagram .cat-eye{fill:#293e34}.diagram .cat-whisker{stroke:#445d50;stroke-width:1.8;stroke-linecap:round}.diagram .tail{fill:none;stroke:#d16c4c;stroke-width:23;stroke-linecap:round;stroke-linejoin:round}.diagram .tail-inner{fill:none;stroke:#f0c298;stroke-width:8;stroke-linecap:round;stroke-dasharray:3 11}.diagram .pulse{transform-origin:356px 260px;animation:breathe 5s ease-in-out infinite}@keyframes breathe{0%,100%{opacity:.75;transform:scale(.97)}50%{opacity:1;transform:scale(1.02)}}
+    .section-rule{border-top:1px solid var(--line)}.anatomy{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:70px;padding:39px 0 100px;align-items:start}.section-head h2,.lab h2,.install h2{font-family:var(--serif);font-weight:400;line-height:1.12;letter-spacing:-.05em;font-size:clamp(38px,4.1vw,61px);margin:15px 0}.section-head p{color:var(--sub);line-height:1.75;font-size:15px;max-width:430px}.parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:27px}.part-tab{border:1px solid #d4d8ca;text-align:left;background:transparent;min-height:63px;border-radius:10px;padding:12px 14px;color:#415348;font-size:12px;font-weight:800;transition:background .2s,border-color .2s}.part-tab small{display:block;margin-bottom:5px;font-size:9px;letter-spacing:.1em;color:#96a094}.part-tab[aria-pressed="true"]{border-color:#b86b4a;background:#f5e2d0;color:#8c482f}.part-tab[aria-pressed="true"] small{color:#a76548}.part-detail{background:#fffdf6;border:1px solid #d8d9cc;border-radius:18px;padding:31px 35px;min-height:289px;display:flex;flex-direction:column}.detail-top{display:flex;justify-content:space-between;align-items:center;gap:14px}.detail-num{font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--rust)}.detail-badge{border:1px solid #d9ddd2;background:#f1f5ec;border-radius:99px;padding:7px 11px;font-size:10px;font-weight:800;color:#596d5d}.part-detail h3{font-family:var(--serif);letter-spacing:-.05em;font-weight:400;font-size:clamp(35px,3.6vw,51px);margin:20px 0 9px}.part-detail p{font-size:15px;line-height:1.78;margin:0;color:#536059;max-width:570px}.module-line{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:auto;padding-top:25px;font-size:11px;color:#66736b}.module-line code{padding:7px 10px;background:#edf0e8;border:1px solid #d9e0d5;border-radius:6px;color:#445747;overflow-wrap:anywhere}.module-line .host{background:#f7e7d8;border-color:#ecd0b5;color:#946042}
+    .lab-bg{background:var(--dark);color:#f5eee3;padding:100px 0 105px;position:relative;overflow:hidden}.lab-bg:before{content:"";width:680px;height:680px;border:1px solid #6b82713b;border-radius:50%;position:absolute;right:-300px;top:-180px;pointer-events:none;box-shadow:0 0 0 80px #5465570b,0 0 0 160px #5465570b}.lab-heading{display:flex;gap:30px;align-items:end;justify-content:space-between;margin-bottom:35px}.lab-heading .eyebrow{color:#b7cbbb}.lab h2{font-size:clamp(41px,5vw,66px);margin:16px 0}.lab-heading p{max-width:360px;line-height:1.7;color:#b4c3b8;font-size:14px}.lab-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:15px}.lab-card{border:1px solid #5a6e60;border-radius:20px;background:#293a32;padding:29px;min-width:0}.cat-console{display:flex;align-items:center;gap:16px;padding-bottom:24px;border-bottom:1px solid #53685a}.cat-avatar{display:grid;place-items:center;flex-shrink:0;border:1px solid #79927c;border-radius:17px;width:74px;height:74px;background:#344a3c;color:#f0b88d}.cat-avatar svg{width:60px;height:60px}.cat-console h3{margin:0 0 6px;font-family:var(--serif);font-size:28px;font-weight:400;letter-spacing:-.035em}.cat-console span{font-size:12px;color:#a9c0ac}.status-pill{margin-left:auto;font-size:10px!important;color:#f4ca9b!important;font-weight:800;border:1px solid #9e9064;padding:7px 9px;border-radius:99px;text-transform:uppercase;letter-spacing:.08em}.lab-label{font-size:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:800;color:#bdcdbd;display:block;margin:25px 0 9px}.lab input{width:100%;background:#1f3028;border:1px solid #59705e;color:#fff9ec;padding:14px 15px;border-radius:9px;outline:none;font-size:14px;min-height:46px}.lab input:focus{border-color:#e5aa83;box-shadow:0 0 0 2px #b86b4a55}.lab input::placeholder{color:#9db1a0}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:18px}.controls button{padding:13px 12px;border:1px solid #738979;border-radius:9px;background:#3b5143;color:#ecf2e7;text-align:left;min-height:52px;font-weight:800;font-size:12px;transition:background .2s}.controls button:hover{background:#4b6653}.controls button strong{margin-right:8px;color:#f0b88d}.controls button:disabled{opacity:.45;cursor:not-allowed}.policy-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:23px;flex-wrap:wrap}.policy-row span{font-size:12px;color:#b7c8b7}.toggle{display:inline-flex;align-items:center;gap:9px;font-size:11px;font-weight:800;color:#e7f0df;cursor:pointer}.toggle input{appearance:none;width:39px;height:23px;min-height:0;border-radius:99px;background:#536a58;border:1px solid #84998a;padding:0;position:relative;cursor:pointer}.toggle input:before{content:"";position:absolute;top:3px;left:3px;width:15px;height:15px;border-radius:50%;background:#f0e4d6;transition:transform .2s}.toggle input:checked{background:#b9694b}.toggle input:checked:before{transform:translateX(16px)}
+    .log-head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#b5c9b5}.log-head button{background:none;border:0;color:#e7ae80;text-transform:uppercase;letter-spacing:.1em;font-weight:800;font-size:10px;padding:6px}.event-log{height:317px;overflow:auto;margin-top:23px;display:flex;flex-direction:column;gap:10px;scrollbar-color:#687d6e transparent;scrollbar-width:thin}.event{border-left:2px solid #bba37e;background:#32483a;padding:11px 12px 12px;font-size:13px;line-height:1.55;color:#e9eadf;overflow-wrap:anywhere}.event small{display:block;font-size:10px;letter-spacing:.08em;color:#b0c7b1;margin-bottom:5px}.event.denied{border-color:#e6a077}.event.confirmed{border-color:#a6c79b}.event.quiet{border-color:#748d79}.log-foot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #526657;padding-top:17px;margin-top:15px;gap:15px;color:#adc2af;font-size:11px;line-height:1.6}.log-foot strong{color:#e9d3b4}
+    .explain{padding:101px 0}.explain-head{display:flex;justify-content:space-between;align-items:end;gap:36px}.explain-head p{line-height:1.8;font-size:15px;color:#68746b;max-width:435px;margin:0}.principles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px;margin-top:32px}.principle{padding:28px 27px 32px;border:1px solid var(--line);border-radius:15px;min-height:265px;background:#fbf8f0}.principle .symbol{font-family:var(--serif);font-style:italic;font-size:45px;color:var(--rust);height:62px}.principle h3{font-size:18px;letter-spacing:-.035em;margin:14px 0 12px}.principle p{font-size:13px;line-height:1.8;color:#677469;margin:0}
+    .install{padding:52px 0 85px;display:grid;grid-template-columns:.84fr 1.16fr;gap:55px;align-items:center}.install p{color:#647067;font-size:15px;line-height:1.75;max-width:455px}.command-panel{border-radius:18px;border:1px solid #435c4d;background:#1c2b26;color:#dde5d9;overflow:hidden;min-width:0;box-shadow:0 15px 40px #20362b20}.command-top{display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #405346;padding:14px 19px;color:#b1c4b3;font-size:11px}.traffic{display:flex;gap:6px}.traffic i{width:8px;height:8px;border-radius:50%;background:#d89d75}.traffic i:nth-child(2){background:#c5b16f}.traffic i:nth-child(3){background:#87a788}.copy-btn{border:1px solid #68846c;border-radius:7px;padding:8px 12px;color:#ebf2e8;background:#344d3d;font-size:11px;font-weight:800;min-height:36px}.copy-btn:hover{background:#47614d}.command-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.95;font-size:13px;padding:26px 28px 30px;margin:0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.command-panel .comment{color:#a0b5a2}.command-panel .command{color:#f1bb8f}.install .small-note{font-size:12px;color:#88958b}
+    .foot{border-top:1px solid var(--line);padding:31px 0 38px;display:flex;align-items:center;justify-content:space-between;gap:20px;font-size:12px;color:#6d7b70}.foot a{text-decoration:none}.foot-links{display:flex;flex-wrap:wrap;gap:18px}.footer-cat{font-size:16px;letter-spacing:-.09em;color:var(--rust)}
+    @media (max-width:980px){.wrap{width:min(100% - 42px,900px)}.hero{grid-template-columns:1fr;gap:35px;padding:57px 0 50px}.hero-copy{max-width:730px}.hero h1{font-size:clamp(60px,10vw,91px)}.diagram{max-width:750px;width:100%;margin-inline:auto}.anatomy{grid-template-columns:1fr;gap:25px;padding-bottom:70px}.part-detail{min-height:265px}.lab-grid{grid-template-columns:1fr}.lab-heading{align-items:start}.explain{padding:78px 0}.explain-head{align-items:start;flex-direction:column;gap:10px}.install{gap:25px}} 
+    @media (max-width:600px){.wrap{width:calc(100% - 32px)}.topbar{height:70px}.toplinks{gap:12px;font-size:11px}.toplinks .hide-small{display:none}.toplinks .top-github{padding:10px 13px}.hero{padding:49px 0 34px}.hero h1{font-size:clamp(51px,15vw,74px);margin:22px 0 22px}.hero p{font-size:15px;line-height:1.7}.hero-note{font-size:13px}.diagram-top{top:14px;left:15px;right:15px}.diagram-top span{font-size:8px}.diagram-top strong{font-size:8px}.diagram-bottom{font-size:8px;bottom:10px;left:13px;right:13px}.parts{grid-template-columns:repeat(2,minmax(0,1fr))}.anatomy{padding-top:30px}.part-detail{padding:24px;min-height:290px}.lab-bg{padding:71px 0 72px}.lab-heading{display:block}.lab-grid{gap:12px}.lab-card{padding:20px}.cat-avatar{width:60px;height:60px}.cat-avatar svg{width:50px;height:50px}.cat-console h3{font-size:25px}.status-pill{font-size:9px!important}.policy-row{align-items:start}.event-log{height:280px}.explain{padding:69px 0}.principles{grid-template-columns:1fr;gap:11px}.principle{min-height:0}.install{padding:32px 0 66px;grid-template-columns:1fr}.command-panel pre{font-size:11px;padding:18px}.foot{flex-direction:column;align-items:start}.diagram .component text{font-size:14px}}
+    @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <header class="wrap topbar" id="top">
+    <a class="brand" href="#top" aria-label="Ginger Tail home"><span class="brand-mark"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M5 15 8 5l8 7 8-7 3 10c1 9-5 13-11 13S4 24 5 15Z" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M11 18h1m8 0h1m-6 4 1 1 1-1" stroke="currentColor" stroke-width="2.7" stroke-linecap="round"/></svg></span> ginger<span style="color:var(--rust)">tail</span><span style="font-size:10px;font-weight:700;color:#849087;margin-left:5px">/ 0.1</span></a>
+    <nav class="toplinks" aria-label="Main navigation"><a class="hide-small" href="#anatomy">Anatomy</a><a href="#playground">Playground</a><a href="#install">Get started</a><a class="top-github" href="https://github.com/jomko/ginger-tail" target="_blank" rel="noopener noreferrer">GitHub ↗</a></nav>
+  </header>
+  <main>
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="dot"></span> Open source / local-first / Node.js</div>
+        <h1 id="hero-title">The model thinks.<br>The cat <em>stays.</em></h1>
+        <p>Most AI agents are built to finish a task. Ginger Tail grew from a different question: what does an agent need to keep being itself between conversations?</p>
+        <div class="hero-actions"><a class="btn primary" href="#playground">Meet the mechanics <span aria-hidden="true">↗</span></a><a class="btn secondary" href="#install">Try a real cat <span aria-hidden="true">→</span></a></div>
+        <div class="hero-note">A brain is rented by the minute. A life takes longer.</div>
+      </div>
+      <div class="diagram" aria-label="Exploded interactive anatomy of a cat agent. Select any of six mechanisms.">
+        <div class="diagram-top"><span>FIG. 01 / ANATOMY OF AN AGENT</span><strong>INTERACTIVE MODEL ↗</strong></div>
+        <svg class="mechanism" viewBox="0 0 700 560" role="img" aria-labelledby="anatomy-svg-title">
+          <title id="anatomy-svg-title">Six detachable mechanisms orbit a mechanical cat: identity, attention, memory, thought, permission, and rest.</title>
+          <g class="wire"><path d="M338 185 216 112"/><path d="M298 259 155 255"/><path d="M410 203 536 156"/><path d="M413 314 541 318"/><path d="M307 360 160 409"/><path d="M365 410 391 478"/></g>
+          <g opacity=".55"><circle cx="349" cy="283" r="158" fill="none" stroke="#b2beaf" stroke-dasharray="1 10" stroke-width="2"/><circle cx="349" cy="283" r="123" fill="none" stroke="#c7cdbd" stroke-width="1"/></g>
+          <!-- central chassis -->
+          <g>
+            <path class="cat-shell" d="M293 318Q275 360 278 409L418 409Q426 347 406 313Z"/>
+            <path class="plate" d="M319 350h61v39h-61z" rx="5"/>
+            <circle class="bolt" cx="329" cy="360" r="4"/><circle class="bolt" cx="370" cy="360" r="4"/>
+            <path class="fine" d="M340 362h18m-18 7h18m-18 7h18"/>
+            <path class="cat-shell" d="M278 206 295 151l50 30 53-30 20 57c20 55-10 101-69 103-63 0-91-45-71-105Z"/>
+            <path class="cat-parts" d="M306 190 305 172l30 22m27-1 29-21 3 24" fill="none"/>
+            <path d="M305 219h89" class="fine" stroke-dasharray="4 7"/>
+            <path class="cat-eye" d="M306 242q16-14 30 0-15 19-30 0Zm54 0q16-14 30 0-15 19-30 0Z"/>
+            <path d="m347 260 7 0-3 5Z" fill="#c27254"/><path class="cat-whisker" d="M333 269h-45m46 7-41 8m77-15h43m-42 7 40 8"/>
+            <path class="fine" d="M341 267q-8 10-15 1m25-1q7 10 15 1"/>
+            <circle class="bolt" cx="293" cy="224" r="4"/><circle class="bolt" cx="405" cy="224" r="4"/>
+            <g class="pulse"><circle cx="351" cy="216" r="13" fill="#d58b66" stroke="#314e40" stroke-width="2"/><path d="M342 216h18m-9-9v18" stroke="#fff3df" stroke-width="1.5"/></g>
+            <path class="tail" d="M417 380c66 7 80-33 60-71-13-23-47-13-41 12"/>
+            <path class="tail-inner" d="M417 380c66 7 80-33 60-71-13-23-47-13-41 12"/>
+            <path class="main-line" d="M300 320h104"/>
+          </g>
+          <!-- detached clickable components -->
+          <g class="component" data-part="identity" role="button" tabindex="0" aria-label="Identity mechanism">
+            <path class="hit" d="M132 101h113"/>
+            <rect class="part-body" x="148" y="78" width="82" height="62" rx="10" fill="#e9decb" stroke="#758d7a" stroke-width="2"/>
+            <path class="fine" d="M164 99h50m-50 9h36m-36 9h43"/>
+            <circle class="bolt" cx="211" cy="117" r="5"/>
+            <text x="186" y="64" text-anchor="middle">Identity</text><text class="index" x="186" y="155" text-anchor="middle">01 / HOST</text>
+          </g>
+          <g class="component" data-part="attention" role="button" tabindex="0" aria-label="Attention mechanism">
+            <circle class="part-body" cx="139" cy="261" r="42" fill="#dce5d7" stroke="#738d79" stroke-width="2"/>
+            <circle cx="139" cy="261" r="25" fill="none" stroke="#87a390" stroke-width="1.6" stroke-dasharray="3 5"/>
+            <path class="fine" d="M139 229v64m-32-32h64m-32 0 23-22"/>
+            <circle class="bolt" cx="139" cy="261" r="7"/>
+            <text x="139" y="206" text-anchor="middle">Attention</text><text class="index" x="139" y="316" text-anchor="middle">02 / INTEREST</text>
+          </g>
+          <g class="component" data-part="memory" role="button" tabindex="0" aria-label="Memory mechanism">
+            <rect class="part-body" x="497" y="120" width="81" height="62" rx="9" fill="#ebdfc9" stroke="#738d79" stroke-width="2"/>
+            <path class="fine" d="M512 136h52m-52 9h52m-52 9h52m-52 9h52"/>
+            <circle class="bolt" cx="515" cy="171" r="3"/><circle class="bolt" cx="561" cy="171" r="3"/>
+            <text x="538" y="104" text-anchor="middle">Memory</text><text class="index" x="538" y="197" text-anchor="middle">03 / SOURCES</text>
+          </g>
+          <g class="component" data-part="thought" role="button" tabindex="0" aria-label="Thought mechanism">
+            <path class="part-body" d="M512 297c-4-29 21-41 40-27 21-9 42 11 33 32 13 20-8 45-29 37-17 13-42 0-38-18-13-5-15-18-6-24Z" fill="#f1d2b2" stroke="#ad7659" stroke-width="2"/>
+            <path class="fine" d="M532 284q21 12 2 26m17-33q-13 26 10 38m5-31q20 12 0 35m-34 1q16 8 17 16"/>
+            <text x="547" y="249" text-anchor="middle">Thought</text><text class="index" x="548" y="362" text-anchor="middle">04 / PRIVATE</text>
+          </g>
+          <g class="component" data-part="policy" role="button" tabindex="0" aria-label="Permission mechanism">
+            <rect class="part-body" x="110" y="382" width="96" height="72" rx="10" fill="#f0dcc8" stroke="#b17c5e" stroke-width="2"/>
+            <path d="M141 416v-14a17 17 0 0 1 34 0v14" stroke="#9d775c" fill="none" stroke-width="4"/>
+            <rect x="133" y="414" width="50" height="29" rx="5" fill="#d38c68" stroke="#6c5946" stroke-width="2"/>
+            <circle cx="158" cy="426" r="4" fill="#364739"/>
+            <text x="158" y="370" text-anchor="middle">Permission</text><text class="index" x="158" y="472" text-anchor="middle">05 / HOST GATE</text>
+          </g>
+          <g class="component" data-part="rest" role="button" tabindex="0" aria-label="Rest mechanism">
+            <circle class="part-body" cx="393" cy="477" r="39" fill="#e0e7d8" stroke="#749078" stroke-width="2"/>
+            <path class="fine" d="M398 450q-22 15-8 34 14 14 27-6-18 8-25-4-7-12 6-24Z" fill="#adc5af"/>
+            <path d="M412 452h12m-7-7v13" stroke="#6d8b72" stroke-width="1.6"/>
+            <text x="393" y="430" text-anchor="middle">Rest</text><text class="index" x="393" y="530" text-anchor="middle">06 / CHOICE</text>
+          </g>
+        </svg>
+        <div class="diagram-bottom"><span>CLICK A COMPONENT TO EXPLORE</span><span>NOT TO SCALE · ASSEMBLY 001</span></div>
+      </div>
+    </section>
+
+    <div class="wrap section-rule"></div>
+    <section class="wrap anatomy" id="anatomy" aria-labelledby="anatomy-title">
+      <div class="section-head">
+        <div class="eyebrow"><span class="dot"></span> 01 / under the fur</div>
+        <h2 id="anatomy-title">Six parts.<br>One continuing life.</h2>
+        <p>Not a bigger prompt. A set of small, inspectable mechanisms that a trusted host can assemble around a temporary model call. Select a part on the cat above or below.</p>
+        <div class="parts" aria-label="Explore the six parts">
+          <button class="part-tab" data-part="identity" aria-pressed="true"><small>01 /</small>Identity</button>
+          <button class="part-tab" data-part="attention" aria-pressed="false"><small>02 /</small>Attention</button>
+          <button class="part-tab" data-part="memory" aria-pressed="false"><small>03 /</small>Memory</button>
+          <button class="part-tab" data-part="thought" aria-pressed="false"><small>04 /</small>Thought</button>
+          <button class="part-tab" data-part="policy" aria-pressed="false"><small>05 /</small>Permission</button>
+          <button class="part-tab" data-part="rest" aria-pressed="false"><small>06 /</small>Rest</button>
+        </div>
+      </div>
+      <article class="part-detail" aria-live="polite" aria-atomic="true">
+        <div class="detail-top"><span class="detail-num" id="detail-num">COMPONENT 01 / 06</span><span class="detail-badge" id="detail-badge">HOST-OWNED</span></div>
+        <h3 id="detail-title">A name that survives.</h3>
+        <p id="detail-text">A model call is temporary. An agent's identity is not. A host keeps the character, values, boundaries, and state outside the model window — a new call does not mean a new individual.</p>
+        <div class="module-line"><span>WHERE IT LIVES</span><code id="detail-module" class="host">trusted host / identity</code></div>
+      </article>
+    </section>
+
+    <section class="lab-bg" id="playground">
+      <div class="wrap lab">
+        <div class="lab-heading">
+          <div><div class="eyebrow"><span class="dot"></span> 02 / the little laboratory</div><h2>A cat with choices.</h2></div>
+          <p>Walk through one simple wake. Watch how observing, thinking, proposing an action, and going to sleep are different steps.</p>
+        </div>
+        <div class="lab-grid">
+          <div class="lab-card">
+            <div class="cat-console">
+              <div class="cat-avatar" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none"><path d="M10 30 16 10l16 12 16-12 6 20c6 28-50 28-44 0Z" fill="#e6b48d" stroke="#9c846b" stroke-width="2"/><path d="M22 34h3m14 0h3m-10 7 2 2 2-2" stroke="#25392e" stroke-width="3.5" stroke-linecap="round"/><path d="M13 40H4m9 6-9 4m47-10h9m-9 6 9 4" stroke="#e6b48d" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+              <div><h3>Mochi (illustrated)</h3><span>One fictional wake at a time</span></div><span class="status-pill" id="cat-state" aria-live="polite">READY</span>
+            </div>
+            <label class="lab-label" for="world-input">Give the cat something to notice</label>
+            <input id="world-input" maxlength="120" value="A sunbeam moves across the floor." autocomplete="off" spellcheck="false" aria-describedby="world-help">
+            <div id="world-help" style="font-size:11px;color:#aebfae;margin-top:8px">Just an observation; it stays in this browser.</div>
+            <div class="controls">
+              <button id="observe" type="button"><strong>01</strong> Observe ↗</button>
+              <button id="think" type="button"><strong>02</strong> Form a thought ↗</button>
+              <button id="propose" type="button"><strong>03</strong> Propose action ↗</button>
+              <button id="sleep" type="button"><strong>04</strong> Go to sleep ↗</button>
+            </div>
+            <div class="policy-row"><span>HOST POLICY / simulated local signal</span><label class="toggle"><input type="checkbox" id="allow-signal" aria-label="Allow the simulated local signal"><span>Allow signal</span></label></div>
+          </div>
+          <div class="lab-card">
+            <div class="log-head"><span>Event journal / current session</span><button id="reset" type="button">Reset ↺</button></div>
+            <div class="event-log" id="event-log" role="log" aria-live="polite" aria-relevant="additions">
+              <div class="event quiet"><small>00 / READY</small>The cat is waiting. An observation can begin a wake. Nothing happens automatically.</div>
+            </div>
+            <div class="log-foot"><span id="memory-count">0 observations kept this session</span><strong>DETERMINISTIC BROWSER SIMULATION · NO LLM</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap explain" aria-labelledby="why-title">
+      <div class="explain-head">
+        <div class="section-head"><div class="eyebrow"><span class="dot"></span> 03 / why it exists</div><h2 id="why-title">Not another<br>task runner.</h2></div>
+        <p>Ginger Tail grew out of an independent AI character called Ginger. The problem was not how to make another model call. It was what should persist when the call ends — and who gets to decide what happens next.</p>
+      </div>
+      <div class="principles">
+        <article class="principle"><div class="symbol">↝</div><h3>Continuity, not amnesia.</h3><p>Interests, history, and sourced observations can outlive a single model window. A restart need not erase the agent's past.</p></article>
+        <article class="principle"><div class="symbol">∴</div><h3>A thought is not a post.</h3><p>Noticing something, thinking about it, wanting to share, and actually acting are separate steps. Silence is allowed.</p></article>
+        <article class="principle"><div class="symbol">⌁</div><h3>The keys stay with the host.</h3><p>The model can suggest. Only trusted host policy can authorize effects. Uncertain outcomes are not blindly retried.</p></article>
+      </div>
+    </section>
+
+    <div class="wrap section-rule"></div>
+    <section class="wrap install" id="install" aria-labelledby="install-title">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> 04 / adopt a cat</div>
+        <h2 id="install-title">Enough theory.<br>Meet Mochi.</h2>
+        <p>Run a tiny example on your machine. The default mode is an honest offline, deterministic demo with local conversational memory. Want model-generated replies? Connect local Ollama.</p>
+        <p class="small-note">Node.js 22+ · no API key · no accounts · no external posting · MIT</p>
+        <a class="btn secondary" href="https://github.com/jomko/ginger-tail/blob/main/examples/meet-a-cat.mjs" target="_blank" rel="noopener noreferrer">Read the example source ↗</a>
+      </div>
+      <div class="command-panel">
+        <div class="command-top"><div class="traffic" aria-hidden="true"><i></i><i></i><i></i></div><span>terminal — meet your new cat</span><button class="copy-btn" id="copy" type="button">Copy commands</button></div>
+        <pre id="commands"><span class="comment"># Clone the open-source engine</span>
+<span class="command">git clone https://github.com/jomko/ginger-tail.git</span>
+<span class="command">cd ginger-tail</span>
+
+<span class="comment"># Talk to Mochi (offline, deterministic)</span>
+<span class="command">npm run demo:cat</span>
+
+<span class="comment"># Optional real LLM (install Ollama first)</span>
+<span class="command">ollama pull llama3.2:3b</span>
+<span class="command">CAT_MODEL=llama3.2:3b npm run demo:cat</span></pre>
+      </div>
+    </section>
+  </main>
+  <footer class="wrap foot"><div><strong>ginger<span style="color:var(--rust)">tail</span></strong> &nbsp; · &nbsp; Small machinery for continuing lives. <span class="footer-cat" aria-hidden="true">=^..^=</span></div><nav class="foot-links" aria-label="Footer"><a href="https://github.com/jomko/ginger-tail" target="_blank" rel="noopener noreferrer">Source ↗</a><a href="https://github.com/jomko/ginger-tail/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener noreferrer">Architecture ↗</a><a href="https://github.com/jomko/ginger-tail/releases/tag/v0.1.0" target="_blank" rel="noopener noreferrer">v0.1.0 ↗</a><a href="https://github.com/jomko/ginger-tail/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT ↗</a></nav></footer>
+  <script>
+  (() => {
+    'use strict';
+    const parts = {
+      identity: { number:'01', badge:'HOST-OWNED', title:'A name that survives.', text:'A model call is temporary. An agent’s identity is not. A host keeps the character, values, boundaries, and state outside the model window — a new call does not mean a new individual.', module:'trusted host / identity', host:true },
+      attention: { number:'02', badge:'ENGINE + HOST', title:'Something worth noticing.', text:'Interests can become active, fall dormant, resume, or close. The engine models those transitions; the trusted host decides what the agent actually sees and stores.', module:'attention-core', host:false },
+      memory: { number:'03', badge:'ENGINE + HOST', title:'Memory with receipts.', text:'Remembering requires visible source evidence. A retrieved observation is not automatically a fact. The host still owns storage, source checks, and privacy.', module:'memory-continuity', host:false },
+      thought: { number:'04', badge:'ENGINE + HOST', title:'Thinking is not sharing.', text:'A private thought can stay private. Sharing needs a separate, explicit intent. The engine checks shape and provenance; the host decides what may be acted upon.', module:'thought-core', host:false },
+      policy: { number:'05', badge:'HOST-OWNED', title:'The door has a lock.', text:'A proposed action never grants itself permission. The host authorizes external effects, requires receipts, and reconciles uncertainty before another attempt.', module:'policy-action + trusted host', host:true },
+      rest: { number:'06', badge:'ENGINE', title:'No action is an answer.', text:'The cat may stop exploring or go to sleep. There is no posting quota, and unused model budget does not create an obligation to speak.', module:'cognition-journey / runWake', host:false }
+    };
+    const partButtons = Array.from(document.querySelectorAll('[data-part]'));
+    function choosePart(name) {
+      if (!Object.prototype.hasOwnProperty.call(parts,name)) return;
+      const p = parts[name];
+      document.getElementById('detail-num').textContent = 'COMPONENT ' + p.number + ' / 06';
+      document.getElementById('detail-badge').textContent = p.badge;
+      document.getElementById('detail-title').textContent = p.title;
+      document.getElementById('detail-text').textContent = p.text;
+      const code = document.getElementById('detail-module');
+      code.textContent = p.module;
+      code.classList.toggle('host',p.host);
+      partButtons.forEach(el => {
+        const selected = el.dataset.part === name;
+        if(el.tagName === 'BUTTON') el.setAttribute('aria-pressed', String(selected));
+        else { el.classList.toggle('is-active',selected); el.setAttribute('aria-pressed',String(selected)); }
+      });
+    }
+    partButtons.forEach(el => {
+      el.addEventListener('click', () => choosePart(el.dataset.part));
+      if (el.tagName !== 'BUTTON') el.addEventListener('keydown',event => {
+        if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choosePart(el.dataset.part); }
+      });
+    });
+    choosePart('identity');
+
+    const log = document.getElementById('event-log');
+    const status = document.getElementById('cat-state');
+    const count = document.getElementById('memory-count');
+    const world = document.getElementById('world-input');
+    const gate = document.getElementById('allow-signal');
+    let state = { seen:'', thought:'', sleeping:false, observations:[], step:0 };
+
+    function entry(type,title,message) {
+      const row = document.createElement('div');
+      row.className = 'event ' + type;
+      const tag = document.createElement('small');
+      tag.textContent = String(++state.step).padStart(2,'0') + ' / ' + title;
+      const body = document.createTextNode(message);
+      row.append(tag,body);
+      log.prepend(row);
+      while(log.children.length > 15) log.lastElementChild.remove();
+    }
+    function setStatus(label){ status.textContent = label; }
+    function refreshCount(){ const n=state.observations.length;count.textContent=n+' observation'+(n===1?'':'s')+' kept this session';}
+    document.getElementById('observe').addEventListener('click',() => {
+      const text=world.value.trim();
+      if(!text){entry('denied','EMPTY OBSERVATION','Give the cat something to observe first.');return;}
+      state.seen=text.slice(0,120);
+      state.observations.push(state.seen);
+      if(state.observations.length>5)state.observations.shift();
+      state.thought='';
+      state.sleeping=false;
+      setStatus('OBSERVING');
+      entry('quiet','OBSERVED','The host shows Mochi: “'+state.seen+'”');
+      refreshCount();
+      choosePart('attention');
+    });
+    document.getElementById('think').addEventListener('click',() => {
+      if(!state.seen){entry('denied','NO CONTEXT','Observe something before forming a thought.');return;}
+      state.sleeping=false;
+      state.thought='Something changed: '+state.seen+' I may keep that to myself.';
+      setStatus('THINKING');
+      entry('quiet','PRIVATE THOUGHT','Scripted thought stored for this session. Nothing was published.');
+      choosePart('thought');
+    });
+    document.getElementById('propose').addEventListener('click',() => {
+      if(!state.thought){entry('denied','NO THOUGHT','There is no thought to propose sharing. Try step 02 first.');return;}
+      state.sleeping=false;
+      setStatus('POLICY CHECK');
+      if(!gate.checked)entry('denied','HOST DENIED','The host blocked the simulated signal. The thought remains private.');
+      else entry('confirmed','LOCAL SIGNAL ALLOWED','The host approved a synthetic local signal. No network request, post, or real action occurred.');
+      choosePart('policy');
+    });
+    document.getElementById('sleep').addEventListener('click',() => {
+      state.sleeping=true;
+      setStatus('ASLEEP');
+      entry('quiet','REST','Mochi chose rest. No further action is required.');
+      choosePart('rest');
+    });
+    document.getElementById('reset').addEventListener('click',() => {
+      state={seen:'',thought:'',sleeping:false,observations:[],step:0};
+      gate.checked=false;
+      log.replaceChildren();
+      entry('quiet','READY','The cat is waiting. An observation can begin a wake. Nothing happens automatically.');
+      setStatus('READY');refreshCount();choosePart('identity');
+    });
+    document.getElementById('copy').addEventListener('click',async () => {
+      const button=document.getElementById('copy');
+      const commands=['git clone https://github.com/jomko/ginger-tail.git','cd ginger-tail','npm run demo:cat'].join('\n');
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        try{await navigator.clipboard.writeText(commands);button.textContent='Copied ✓';setTimeout(()=>button.textContent='Copy commands',2000);return;}catch(_){}
+      }
+      button.textContent='Select text below';
+      const selection=window.getSelection();const range=document.createRange();
+      range.selectNodeContents(document.getElementById('commands'));selection.removeAllRanges();selection.addRange(range);
+      setTimeout(()=>button.textContent='Copy commands',2500);
+    });
+  })();
+  </script>
+</body>
+</html>
