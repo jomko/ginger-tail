@@ -30,7 +30,8 @@ test('the main three parts and two-wake explanation remain', () => {
   assert.match(page, /window\/bird-02/)
   assert.match(page, /No model calls or external actions/)
   assert.doesNotMatch(page, /id="motion"|Pause motion|The model thinks\. The cat stays\./)
-  assert.match(page, /mask-composite:intersect/)
+  assert.match(page, /\.hero \.stage\{width:100vi/)
+  assert.match(page, /mask-image:linear-gradient\(to bottom/)
 })
 
 test('interactive controls and anchors are keyboard accessible and unambiguous', () => {
