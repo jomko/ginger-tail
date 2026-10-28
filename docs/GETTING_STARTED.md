@@ -66,10 +66,10 @@ npm test
 Ginger Tail is not published to npm. To install the existing source tag as a Git dependency:
 
 ```bash
-npm install 'git+https://github.com/jomko/ginger-tail.git#v0.1.0'
+npm install 'git+https://github.com/jomko/ginger-tail.git#v0.2.0'
 ```
 
-The v0.1.0 APIs are experimental. Pin a reviewed tag or commit; later changes on `main` do not change the files at that tag. The existing `v0.1.0` tag currently points to [`d7988f4`](https://github.com/jomko/ginger-tail/commit/d7988f4cd9a38791a60660fa0cd343abdfe6ea02).
+The v0.2.0 APIs remain experimental: pin this source tag or a reviewed commit rather than tracking `main`. The earlier `v0.1.0` tag still points to [`d7988f4`](https://github.com/jomko/ginger-tail/commit/d7988f4cd9a38791a60660fa0cd343abdfe6ea02). v0.2.0 changes `WakeResult` variants and adds explicit reconciliation and automatic trusted-receipt recovery; see [Contracts](CONTRACTS.md) and the [v0.2.0 release notes](../docs/releases/v0.2.0.md) before upgrading. The file store requires a single-host local filesystem with working directory `fsync`; unsupported platforms fail closed.
 
 ## A minimal host wake
 
