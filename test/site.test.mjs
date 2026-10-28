@@ -30,7 +30,9 @@ test('the main three parts and two-wake explanation remain', () => {
   assert.match(page, /window\/bird-02/)
   assert.match(page, /No model calls or external actions/)
   assert.doesNotMatch(page, /id="motion"|Pause motion|The model thinks\. The cat stays\./)
-  assert.match(page, /\.hero \.stage\{width:100vi/)
+  assert.match(page, /\.hero \.stage\{width:min\(100%,114svh,1360px\)/)
+  assert.match(page, /--scene-dark:/)
+  assert.match(page, /\.hero h1\{font-size:clamp\(52px/)
   assert.match(page, /mask-image:linear-gradient\(to bottom/)
 })
 
