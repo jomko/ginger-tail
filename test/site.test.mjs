@@ -3,35 +3,42 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { Script } from 'node:vm'
 
-const html = readFileSync(new URL('../docs/index.html', import.meta.url), 'utf8')
+const page = readFileSync(new URL('../docs/index.html', import.meta.url), 'utf8')
 
-test('website is a self-contained HTML page with valid inline JavaScript', () => {
-  assert.match(html, /<!doctype html>/i)
-  assert.match(html, /<meta name="viewport"/)
-  const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
-  assert.equal(scripts.length, 1)
-  assert.doesNotThrow(() => new Script(scripts[0][1]))
-  assert.doesNotMatch(html, /<script[^>]*src=/)
+test('website is fully self-contained and its JavaScript parses', () => {
+  assert.match(page, /<!doctype html>/i)
+  assert.match(page, /<meta name="viewport"/)
+  const script = page.match(/<script>([\s\S]+?)<\/script>/)
+  assert.ok(script, 'inline script is present')
+  assert.doesNotThrow(() => new Script(script[1]))
+  assert.doesNotMatch(page, /<script[^>]+src=/)
+  assert.match(page, /data:image\/webp;base64,/)
+  assert.match(page, /prefers-reduced-motion/)
 })
 
-test('anatomy nodes and accessible controls correspond to all six mechanisms', () => {
-  const parts = ['identity', 'attention', 'memory', 'thought', 'policy', 'rest']
-  for (const part of parts) {
-    assert.match(html, new RegExp('data-part="'+part+'"'))
-    assert.match(html, new RegExp('(?:identity|attention|memory|thought|policy|rest):\\s*\\{'))
+test('the main three parts and two-wake explanation remain', () => {
+  assert.match(page, /The tail/)
+  assert.match(page, /wags the cat/)
+  for (const role of ['model','cat','tail']) {
+    assert.match(page, new RegExp('data-role="'+role+'"'))
+    assert.match(page, new RegExp('(?:^|[,\\s])'+role+':\\{'))
   }
-  const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(x => x[1])
-  assert.equal(new Set(ids).size, ids.length, 'HTML ids must be unique')
-  for (const [, target] of html.matchAll(/href="#([^"]+)"/g)) {
-    assert.ok(ids.includes(target), 'Missing anchor target: '+target)
+  for (const id of ['wake','reset','day-one','day-two','model-state','tail-state','host-state','motion']) {
+    assert.match(page, new RegExp('id="'+id+'"'))
   }
-  assert.match(html, /aria-live="polite"/)
-  assert.match(html, /prefers-reduced-motion/)
+  assert.match(page, /window\/bird-01/)
+  assert.match(page, /window\/bird-02/)
+  assert.match(page, /No model calls or external actions/)
 })
 
-test('browser demo explicitly discloses that it is not a model', () => {
-  assert.match(html, /DETERMINISTIC BROWSER SIMULATION · NO LLM/)
-  assert.match(html, /No network request, post, or real action occurred/)
-  assert.match(html, /Node.js 22\+/)
-  assert.match(html, /npm run demo:cat/)
+test('interactive controls and anchors are keyboard accessible and unambiguous', () => {
+  const ids = [...page.matchAll(/\bid="([^"]+)"/g)].map(match=>match[1])
+  assert.equal(new Set(ids).size, ids.length)
+  for (const [, id] of page.matchAll(/href="#([^"]+)"/g)) {
+    assert.ok(ids.includes(id), `missing anchor #${id}`)
+  }
+  assert.match(page, /aria-live="polite"/)
+  assert.match(page, /:focus-visible/)
+  assert.match(page, /<details>/)
+  assert.match(page, /MIT/)
 })
