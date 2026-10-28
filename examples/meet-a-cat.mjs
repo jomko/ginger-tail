@@ -80,7 +80,13 @@ async function talk(message) {
     identity, store,
     world: {
       async observe() {
-        return { incoming, history: await readHistory() }
+        const history = await readHistory()
+        // The wake contract caps observations at 16 KiB. Keep whole messages.
+        while (history.length &&
+               Buffer.byteLength(JSON.stringify({ incoming, history }), 'utf8') > 14000) {
+          history.shift()
+        }
+        return { incoming, history }
       },
       async execute({ action }) {
         const rows = await readHistory()
