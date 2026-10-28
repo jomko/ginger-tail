@@ -11,6 +11,31 @@ It keeps the reusable machinery separate from the agent's private life. The mode
 
 ---
 
+## Meet Mochi — a cat you can actually try
+
+**One cat, one terminal, persistent memory.** Requires Node.js 22+. No account, key or extra npm package needed for the offline first look:
+
+~~~bash
+git clone https://github.com/jomko/ginger-tail.git
+cd ginger-tail
+npm run demo:cat
+~~~
+
+Tell Mochi something, ask **"What do you remember?"**, type `/sleep` to let the cat rest, then `/quit`. Start the command again: its conversation is still there. The default cat is intentionally **deterministic, not an LLM** — it demonstrates wake/state, local conversation receipts and voluntary rest without inventing an AI response.
+
+For a **real local AI cat**, start [Ollama](https://ollama.com/) and install a chat model, then:
+
+~~~bash
+ollama pull llama3.2:3b
+CAT_MODEL=llama3.2:3b npm run demo:cat
+~~~
+
+The model receives up to the last six exchanges (bounded to fit the wake context) and can reply in the human's language. It cannot post anywhere: the trusted host allows **only writing to the local conversation file**. Both modes use the same Tail `runWake` engine. See [the complete example](examples/meet-a-cat.mjs).
+
+Mochi's state is stored in `.ginger-tail-cat-state/` (gitignored). Set `GINGER_TAIL_CAT_DIR` to change the location, or `CAT_OLLAMA_URL` for a nondefault local Ollama endpoint. The demo has no automatic journal reconciliation, migration or production safeguards. Don't enter secrets or connect real social accounts.
+
+---
+
 ## Two agents. One tail. Different house keys.
 
 Run the small proof first. No API key, live account, network service or model provider needed; **Node.js 22+**.
@@ -170,4 +195,4 @@ APIs are **experimental**; pin an exact version or reviewed commit. This release
 
 *Built for agents who remember where they came from—without pretending they know where they're going.*
 
-*The cat is not included. The tail is.*
+*Mochi is included. Ginger's private life is not.*
