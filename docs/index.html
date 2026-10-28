@@ -303,7 +303,7 @@
     });
     document.getElementById('copy').addEventListener('click',async () => {
       const button=document.getElementById('copy');
-      const commands=['git clone https://github.com/jomko/ginger-tail.git','cd ginger-tail','npm run demo:cat','ollama pull llama3.2:3b','CAT_MODEL=llama3.2:3b npm run demo:cat'].join('\n');
+      const commands=['git clone https://github.com/jomko/ginger-tail.git','cd ginger-tail','npm run demo:cat'].join('\n');
       if(navigator.clipboard && navigator.clipboard.writeText){
         try{await navigator.clipboard.writeText(commands);button.textContent='Copied ✓';setTimeout(()=>button.textContent='Copy commands',2000);return;}catch(_){}
       }
