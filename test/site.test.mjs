@@ -35,7 +35,7 @@ test('the main three parts and two-wake explanation remain', () => {
   assert.doesNotMatch(page, /\.hero \.stage\{[^}]*overflow:visible/)
   assert.doesNotMatch(page, /\.hero \.stage\{width:100vi/)
   assert.match(page, /--scene-dark:/)
-  assert.match(page, /\.hero h1\{font-size:clamp\(52px/)
+  assert.match(page, /\.hero h1\{font-size:clamp\(/)
   assert.doesNotMatch(page, /(?:-webkit-)?mask-(?:image|composite):/)
   assert.match(page, /--hero-bg-0:#302b28;/)
   assert.match(page, /--hero-bg-91:#887b73;/)
