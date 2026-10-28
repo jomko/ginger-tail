@@ -30,7 +30,7 @@ ollama pull llama3.2:3b
 CAT_MODEL=llama3.2:3b npm run demo:cat
 ~~~
 
-The model receives the last six exchanges and can reply in the human's language. It cannot post anywhere: the trusted host allows **only writing to the local conversation file**. Both modes use the same Tail `runWake` engine. See [the complete example](examples/meet-a-cat.mjs).
+The model receives up to the last six exchanges (bounded to fit the wake context) and can reply in the human's language. It cannot post anywhere: the trusted host allows **only writing to the local conversation file**. Both modes use the same Tail `runWake` engine. See [the complete example](examples/meet-a-cat.mjs).
 
 Mochi's state is stored in `.ginger-tail-cat-state/` (gitignored). Set `GINGER_TAIL_CAT_DIR` to change the location, or `CAT_OLLAMA_URL` for a nondefault local Ollama endpoint. The demo has no automatic journal reconciliation, migration or production safeguards. Don't enter secrets or connect real social accounts.
 
