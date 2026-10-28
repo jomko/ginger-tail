@@ -28,7 +28,9 @@ test('the main three parts and two-wake explanation remain', () => {
   }
   assert.match(page, /window\/bird-01/)
   assert.match(page, /window\/bird-02/)
-  assert.match(page, /No model calls or external actions/)\n  assert.doesNotMatch(page, /id=\"motion\"|Pause motion|The model thinks\. The cat stays\./)\n  assert.match(page, /mask-composite:intersect/)
+  assert.match(page, /No model calls or external actions/)
+  assert.doesNotMatch(page, /id="motion"|Pause motion|The model thinks\. The cat stays\./)
+  assert.match(page, /mask-composite:intersect/)
 })
 
 test('interactive controls and anchors are keyboard accessible and unambiguous', () => {
