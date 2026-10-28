@@ -23,12 +23,12 @@ test('the main three parts and two-wake explanation remain', () => {
     assert.match(page, new RegExp('data-role="'+role+'"'))
     assert.match(page, new RegExp('(?:^|[,\\s])'+role+':\\{'))
   }
-  for (const id of ['wake','reset','day-one','day-two','model-state','tail-state','host-state','motion']) {
+  for (const id of ['wake','reset','day-one','day-two','model-state','tail-state','host-state']) {
     assert.match(page, new RegExp('id="'+id+'"'))
   }
   assert.match(page, /window\/bird-01/)
   assert.match(page, /window\/bird-02/)
-  assert.match(page, /No model calls or external actions/)
+  assert.match(page, /No model calls or external actions/)\n  assert.doesNotMatch(page, /id=\"motion\"|Pause motion|The model thinks\. The cat stays\./)\n  assert.match(page, /mask-composite:intersect/)
 })
 
 test('interactive controls and anchors are keyboard accessible and unambiguous', () => {
