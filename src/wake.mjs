@@ -32,6 +32,48 @@ function retainAudit(entries) {
 const replacedButNotDurable = error =>
   error?.code === 'STATE_DURABILITY_UNCONFIRMED' && error.replaced === true
 
+// Audit identity of automatic completion recovery; never an operator's.
+const COMPLETION_RECOVERY = 'ginger-tail:completion-recovery'
+const COMPLETION_KEYS = new Set(['id', 'status', 'kind', 'at', 'reason', 'receipt'])
+const ACTION_KIND = /^[a-z][a-z0-9_-]{0,63}$/ // as accepted by parseWakeDecision
+
+// Only the exact record that completion phase 1 writes after a confirmed
+// receipt from the trusted executor qualifies. Any other shape, a receipt
+// already applied, or any reconciliation already recorded for this id
+// (including a conflicting verdict) is left to resolvePendingAction.
+function isRecoverableCompletion(state) {
+  const pending = state.pendingAction
+  const receipt = pending.receipt
+  const history = state.reconciliations
+  return pending.status === 'uncertain' && pending.reason === 'completion_pending' &&
+    typeof pending.id === 'string' && pending.id.length > 0 && pending.id.length <= 128 &&
+    typeof pending.kind === 'string' && ACTION_KIND.test(pending.kind) &&
+    Object.keys(pending).every(key => COMPLETION_KEYS.has(key)) &&
+    !!receipt && typeof receipt === 'object' && !Array.isArray(receipt) &&
+    Object.keys(receipt).length === 1 &&
+    isConfirmedActionReceipt({ status: 'confirmed', receiptId: receipt.receiptId }) &&
+    state.lastReceipt?.actionId !== pending.id &&
+    (history === undefined ||
+      (Array.isArray(history) && !history.some(entry => entry?.actionId === pending.id)))
+}
+
+// Completion phase 2 for a receipt that phase 1 already made durable (the
+// store's barrier confirms what load returns). The world is never called.
+// The clear and its audit entry are one atomic write, so recovery is
+// idempotent: until that write is durable, the same record is recovered
+// again. A failed save rejects; the action stays blocked, or is cleared
+// but unconfirmed exactly as after a failed phase 2.
+async function recoverCompletion(store, state, now) {
+  const { id: actionId, kind, receipt: { receiptId } } = state.pendingAction
+  const entry = { actionId, kind, previousStatus: 'uncertain', previousReason: 'completion_pending',
+                  resolution: 'confirmed', receiptId, automatic: true,
+                  resolvedBy: COMPLETION_RECOVERY, at: now() }
+  await store.save({ ...state, pendingAction: null, lastOutcome: 'recovered',
+                     lastReceipt: { actionId, receiptId, kind },
+                     reconciliations: retainAudit([...(state.reconciliations ?? []), entry]) })
+  return { outcome: 'recovered', actionId, receiptId, kind, wakes: state.wakes }
+}
+
 // Cancels waiting on a side-effect-free port; the abandoned call cannot
 // influence this wake after rejection. The port is not invoked at all once
 // aborted, and its promise is always handled.
@@ -58,6 +100,7 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
     const previous = await store.load()
     if (previous.agentId !== identity.id) throw new Error('Agent identity mismatch')
     if (previous.pendingAction) {
+      if (isRecoverableCompletion(previous)) return recoverCompletion(store, previous, now)
       return { outcome: 'blocked', reason: 'unresolved_action',
                actionId: previous.pendingAction.id }
     }
@@ -137,8 +180,8 @@ export async function runWake({ identity, store, world, decide, authorize = asyn
     try {
       await store.save({ ...pending, pendingAction: null, lastOutcome: 'acted', lastReceipt })
     } catch {
-      // The receipt is durable. Until the clear is durable the agent may
-      // still be blocked by it; reconcile with pendingAction.receipt.
+      // The receipt is durable. If the clear is lost, the next wake
+      // finalizes it from that receipt (outcome `recovered`).
       return { outcome: 'acted', actionId: id, wakes: pending.wakes, durable: false }
     }
     return { outcome: 'acted', actionId: id, wakes: pending.wakes }

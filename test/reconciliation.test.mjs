@@ -62,7 +62,7 @@ function failingSaves(store, shouldFail) {
   } }
 }
 
-test('a durable receipt whose block cannot be cleared stays blocked with that receipt', () => sandbox(async ({ directory }) => {
+test('a durable receipt contradicted by a recorded verdict stays blocked for the operator', () => sandbox(async ({ directory }) => {
   const store = createFileStore({ directory, agentId: identity.id })
   let executions = 0
   const execute = async () => { executions++; return { status: 'confirmed', receiptId: 'receipt-9' } }
@@ -74,13 +74,14 @@ test('a durable receipt whose block cannot be cleared stays blocked with that re
   assert.deepEqual(pending.receipt, { receiptId: 'receipt-9' })
   assert.equal(pending.reason, 'completion_pending')
   assert.equal((await readFile(join(directory, 'state.json'), 'utf8')).includes('secret'), false)
-  await blockedWithoutObserving(store)
 
-  // A verifier contradicting the captured receipt cannot clear the action.
+  // A verifier contradicting the captured receipt cannot clear the action,
+  // and once a conflict is on record, no wake finalizes it automatically.
   assert.equal((await resolve(store, 'action-9', async () =>
     ({ status: 'not-executed', actionId: 'action-9', evidenceId: 'x' }))).reason, 'receipt_conflict')
   assert.equal((await resolve(store, 'action-9', async () =>
     ({ status: 'confirmed', actionId: 'action-9', receiptId: 'other' }))).reason, 'receipt_conflict')
+  assert.equal(await blockedWithoutObserving(store), 'action-9')
   assert.equal((await resolve(store, 'action-9', async () =>
     ({ status: 'confirmed', actionId: 'action-9', receiptId: 'receipt-9' }))).resolution, 'confirmed')
   assert.equal(executions, 1)

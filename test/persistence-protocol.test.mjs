@@ -49,15 +49,31 @@ async function assertNoLostAction(store, system, actionId) {
   return state
 }
 
-// Drives the agent back to health exactly as an operator would: blocked
-// wakes are reconciled from external evidence, never retried.
+// Drives the agent back to health: a durable completion record is finalized
+// by the next wake itself, without executing; any other unresolved action
+// stays blocked until an operator reconciles it from external evidence.
 async function recoverAndAct(store, system) {
   for (let round = 0; round < 3; round++) {
     const observed = { count: 0 }
+    const executed = system.effects.length
+    const pending = (await store.load()).pendingAction
     const result = await wake(store, system.execute(), observed)
-    if (result.outcome === 'acted') return result
+    if (result.outcome === 'acted') {
+      assert.equal(pending, null, 'acted while an earlier action was unresolved')
+      return result
+    }
+    assert.equal(observed.count, 0, 'a blocked or recovering wake observed the world')
+    assert.equal(system.effects.length, executed, 'a blocked or recovering wake executed')
+    if (pending.reason === 'completion_pending') {
+      assert.deepEqual(result, { outcome: 'recovered', actionId: pending.id, receiptId: pending.receipt.receiptId,
+                                 kind: 'note', wakes: result.wakes })
+      assert.ok(system.effects.includes(result.actionId), 'recovered an action that never ran')
+      const audit = (await store.load()).reconciliations.filter(entry => entry.actionId === pending.id)
+      assert.equal(audit.length, 1)
+      assert.equal(audit[0].automatic, true)
+      continue
+    }
     assert.equal(result.outcome, 'blocked')
-    assert.equal(observed.count, 0, 'a blocked wake observed the world')
     const resolved = await resolvePendingAction({ identity, store, actionId: result.actionId,
       verify: system.verify, resolvedBy: 'operator-test' })
     assert.equal(resolved.outcome, 'resolved')
@@ -164,9 +180,15 @@ for (const [kill, label] of boundaries) {
       assert.ok(state.pendingAction?.id === executed[0] || state.lastReceipt?.actionId === executed[0])
     }
 
-    // Restart in a new process, then reconcile from the external log.
+    // Restart in a new process. A durable receipt record is finalized by
+    // that wake without executing; anything else is reconciled from the log.
     let next = (await runWorker(directory, 'action', effects)).results[0]
-    if (next.outcome === 'blocked') {
+    if (state.pendingAction?.reason === 'completion_pending') {
+      assert.deepEqual(next, { outcome: 'recovered', actionId: state.pendingAction.id,
+        receiptId: 'receipt-' + state.pendingAction.id, kind: 'note', wakes: 1 })
+      assert.deepEqual(await effectLines(effects), executed)
+      next = (await runWorker(directory, 'action', effects)).results[0]
+    } else if (next.outcome === 'blocked') {
       assert.equal(state.pendingAction.id, next.actionId)
       const found = (await effectLines(effects)).includes(next.actionId)
       const resolved = await resolvePendingAction({ identity, store, actionId: next.actionId, resolvedBy: 'operator-test',
@@ -183,17 +205,19 @@ for (const [kill, label] of boundaries) {
   }))
 }
 
-test('a restarted process is blocked by a visible but unconfirmed receipt record', { skip: linuxOnly }, t => sandbox(async ({ directory, effects }) => {
+test('a restarted process confirms a visible receipt record at its barrier, then recovers it without executing', { skip: linuxOnly }, t => sandbox(async ({ directory, effects }) => {
   const disk = faultyDisk(t, directory)
   const system = externalSystem()
   const result = await wake(fresh(directory), system.execute({ onEffect: () => disk.fail({ dirSync: [true] }) }))
   assert.equal(result.reason, 'completion_not_persisted')
-  t.mock.restoreAll()
-  const restarted = (await runWorker(directory, 'action', effects)).results[0]
-  assert.deepEqual(restarted, { outcome: 'blocked', reason: 'unresolved_action', actionId: result.actionId })
-  assert.deepEqual(await effectLines(effects), [])
   const pending = JSON.parse(await readFile(join(directory, 'state.json'), 'utf8')).pendingAction
   assert.deepEqual(pending.receipt, { receiptId: 'receipt-' + result.actionId })
+  t.mock.restoreAll()
+  const restarted = (await runWorker(directory, 'action', effects)).results[0]
+  assert.deepEqual(restarted, { outcome: 'recovered', actionId: result.actionId,
+                                receiptId: 'receipt-' + result.actionId, kind: 'note', wakes: 1 })
+  assert.deepEqual(await effectLines(effects), [])
+  assert.deepEqual(system.effects, [result.actionId])
 }))
 
 test('reconciliation whose own save is not durable is confirmed by the next barrier, not repeated blindly', t => sandbox(async ({ directory }) => {

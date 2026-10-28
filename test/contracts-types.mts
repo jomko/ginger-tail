@@ -83,6 +83,9 @@ async function reliabilityTypecheckOnly(store: FileStatePort): Promise<void> {
     const durable: false | undefined = wake.durable
     const id: string = wake.actionId
     void [durable, id]
+  } else if (wake.outcome === 'recovered') {
+    const recovered: [string, string, string, number] = [wake.actionId, wake.receiptId, wake.kind, wake.wakes]
+    void recovered
   } else if (wake.outcome === 'reservation_not_durable') {
     const id: string = wake.actionId
     void id

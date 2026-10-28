@@ -45,6 +45,9 @@ An observation is limited to **16,384 bytes**; an action proposal to **4,096 byt
 
 ~~~text
 lock -> durability barrier -> load
+  -> earlier action unresolved?
+       exact completion_pending record -> finalize from its receipt (recovered); stop
+       anything else                   -> blocked; stop
   -> observe -> decide -> authorize (default deny)
   -> persist reservation (durable, or no execution)
   -> trusted execution
@@ -55,17 +58,18 @@ lock -> durability barrier -> load
   -> release lock
 ~~~
 
-The confirmed receipt has `{ status: 'confirmed', receiptId: '...' }` with a valid bounded ID. Missing, malformed, failing or uncertain receipts **do not** count as success. No blind automatic retry is permitted. A pending action requires explicit reconciliation (below).
+The confirmed receipt has `{ status: 'confirmed', receiptId: '...' }` with a valid bounded ID. Missing, malformed, failing or uncertain receipts **do not** count as success. No blind automatic retry is permitted. A pending action requires explicit reconciliation (below), with one exception: a durable receipt whose block was not cleared is finalized by the next wake ([automatic completion recovery](#automatic-completion-recovery)). It is completion, not a retry.
 
 **Why two phases.** A save can rename a new `state.json` into place and *then* fail its directory fsync. The new file is then visible, but it may not survive power loss. If one write both recorded the receipt and cleared the block, such a failure could leave a visible state that permits new actions while the wake reports failure. Two phases rule that out: a state that clears the block is only ever written after the receipt is durable.
 
 | Result | Meaning | State afterwards |
 | --- | --- | --- |
 | `acted` | Receipt durable, block cleared durably | Permits the next action |
-| `acted`, `durable: false` | Receipt durable; clearing the block not confirmed | Permits the next action, or stays blocked on this id with `pendingAction.receipt` |
+| `acted`, `durable: false` | Receipt durable; clearing the block not confirmed | Permits the next action, or holds the `completion_pending` record that the next wake recovers |
+| `recovered` | This wake finalized an earlier `completion_pending` record from its receipt. Nothing was observed, decided or executed | Permits the next action |
 | `uncertain`, `execution_failed` | `world.execute` threw; the effect may have happened | Blocked on this id |
 | `uncertain`, `receipt_invalid` | No valid confirmed receipt | Blocked on this id |
-| `uncertain`, `completion_not_persisted` | The effect **was** confirmed (`receipt` in the result; keep it), but the receipt could not be recorded durably | Blocked on this id |
+| `uncertain`, `completion_not_persisted` | The effect **was** confirmed (`receipt` in the result; keep it), but the receipt could not be recorded durably | Blocked on this id. If the receipt record became visible and the next barrier confirms it, that wake recovers it; otherwise reconcile with the receipt |
 | `reservation_not_durable` | The reservation became visible but its fsync failed. **`world.execute` was not called** | Blocked on this id; after power loss the reservation may be absent |
 | rejection | Failure before any reservation became visible (including the barrier) | Unchanged; nothing executed |
 
@@ -79,15 +83,47 @@ Within the single-host filesystem assumptions below, Tail guarantees:
 
 1. **At most one execution attempt per action id.** No code path calls `world.execute` again for an id.
 2. **No execution without a durable reservation.** `execute` runs only after the reservation's directory fsync succeeded.
-3. **An unresolved action stays blocking.** After a reservation is durable, every state Tail writes keeps the action blocked until a confirmed receipt is durable or `resolvePendingAction` records verified evidence. A failed write, a crash or a power loss can only expose an earlier state that still holds the reservation, or a later one that also blocks.
+3. **An unresolved action stays blocking.** After a reservation is durable, every state Tail writes keeps the action blocked until a confirmed receipt is durable or `resolvePendingAction` records verified evidence. A failed write, a crash or a power loss can only expose an earlier state that still holds the reservation, or a later one that also blocks, or one that clears the block and already carries the durable receipt.
+6. **Recovery never executes.** Automatic completion recovery does not call `observe`, `decide`, `authorize` or `execute`; it only finalizes an effect whose trusted receipt is already durable.
 4. **No decision on non-durable state.** `withLock` fsyncs the directory before the callback reads, so a wake never acts on a state that is merely visible after an earlier failed fsync.
 5. **No overlapping wakes** for one state directory on one host (see the lock section).
 
-It does **not** guarantee exactly-once external effects. An unconfirmed effect may have happened once, and only the external system knows. It also does not guarantee that an `acted, durable: false` agent stays unblocked after power loss, or that a verifier's `not-executed` is true.
+It does **not** guarantee exactly-once external effects. An unconfirmed effect may have happened once, and only the external system knows. It also does not guarantee that an `acted, durable: false` agent stays unblocked after power loss (its next wake may be a recovery wake), or that a verifier's `not-executed` is true.
+
+### Automatic completion recovery
+
+A completed action is cleared in two writes. If the first (the receipt record) is durable and the second (the clear) is lost to a failed write, a crash or a power loss, the state holds:
+
+~~~js
+pendingAction: { id, status: 'uncertain', kind, at, reason: 'completion_pending', receipt: { receiptId } }
+~~~
+
+The next `runWake` finalizes it **instead of** an ordinary wake and returns:
+
+~~~js
+{ outcome: 'recovered', actionId, receiptId, kind, wakes } // wakes unchanged
+~~~
+
+- **One atomic write.** It clears `pendingAction`, sets `lastReceipt` to the exact action id, receipt id and kind, sets `lastOutcome: 'recovered'`, and appends one audit entry to `state.reconciliations` (`resolution: 'confirmed'`, `automatic: true`, `resolvedBy: 'ginger-tail:completion-recovery'`). A later `resolvePendingAction` for that id reports `already-resolved`.
+- **No world contact.** The recovery wake does not observe, decide, authorize or execute. The next wake is an ordinary one.
+- **Idempotent.** Until the recovery write is durable, the same record is recovered again; once it is visible, the next barrier confirms it. A crash, `SIGKILL` or power loss at any point leaves either the unchanged record or the recovered state, never a second audit entry.
+- **Fails closed.** If the recovery save fails, `runWake` rejects with the store's error. Before a rename nothing changed and the action stays blocked. After a rename whose fsync failed (`StateDurabilityError`, `replaced: true`), the visible state is cleared and already carries the receipt, exactly as after a failed phase 2.
+- **Serialized.** It runs under the wake lock, after the durability barrier. A concurrent wake or reconciliation is refused with `WAKE_LOCKED`.
+
+**Trust and durability assumptions.** The receipt in the record was written only by `runWake`, from a `world.execute` result that passed the confirmed-receipt check. Model output, observations and authorization results never reach `pendingAction.receipt`. The record counts as durable because the store's barrier confirmed it before `load` returned it; a custom `StatePort` must give that guarantee (see below). Tail trusts the local state file as much as it trusts its own writes: anyone who can write `state.json` can forge any state.
+
+**What still needs manual reconciliation.** Only a record of exactly that shape is recovered: `status: 'uncertain'`, `reason: 'completion_pending'`, a valid id, a valid action kind, a receipt with exactly one valid `receiptId`, and no other fields. Everything else stays `blocked` until `resolvePendingAction`:
+
+- a reservation (`pending`) after a crash, and every `execution_failed` or `receipt_invalid` record;
+- `reservation_not_durable`, and `completion_not_persisted` when only the reservation survived;
+- v0.1.0 pending records;
+- a completion record that any reconciliation attempt already touched (for example a conflicting verdict or a failed verification), whose receipt was already applied to `lastReceipt`, or that is malformed in any way.
+
+`resolvePendingAction` still resolves a `completion_pending` record explicitly, before any wake.
 
 ### Reconciling a pending action
 
-A `pending` or `uncertain` action blocks every later wake until a trusted host or operator resolves it. Tail never decides this on its own, never infers success or failure from missing state, and never retries the action.
+A `pending` or `uncertain` action blocks every later wake until a trusted host or operator resolves it. Apart from [automatic completion recovery](#automatic-completion-recovery), Tail never decides this on its own. It never infers success or failure from missing state, and never retries the action.
 
 ~~~js
 import { resolvePendingAction } from 'ginger-tail'
@@ -142,13 +178,13 @@ A refused acquisition throws `WakeLockError` (`code: 'WAKE_LOCKED'`, message sti
 1. Stop **every** process and container that can open this state directory, and confirm they are gone (`docker ps`, `ps`, the orchestrator).
 2. Run `store.inspectLock()` and note `reason`, `owner.pid`, `owner.hostname`, `owner.acquiredAt`. Confirm that this owner is among the processes stopped in step 1.
 3. With nothing running, delete `wake.lock` and every `wake.lock.recover-*` file in the state directory.
-4. Start one wake. If it reports `blocked`, reconcile that action with `resolvePendingAction` before anything else.
+4. Start one wake. If it reports `blocked`, reconcile that action with `resolvePendingAction` before anything else. A `recovered` result needs nothing further.
 
 **Durability.** `save` writes and fsyncs a `0600` temporary file, renames it over `state.json`, then fsyncs the directory. Newly created state directories are fsynced into their parents. On a failure *before* the rename, the temporary file is removed and `state.json` is unchanged. On a failure *after* the rename (directory fsync), the new state is already **visible** but not confirmed durable. Do not assume the previous file is still there. `save` then throws `StateDurabilityError` (`code: 'STATE_DURABILITY_UNCONFIRMED'`, `replaced: true`, `unsupported: true|false`).
 
 `withLock` fsyncs the directory after acquiring the lock and before its callback (the **durability barrier**). This confirms that what the callback reads is durable, and it makes a filesystem without directory fsync (for example on Windows) fail predictably before any observation, decision or effect. It throws `StateDurabilityError` with `replaced: false`. There is no silent downgrade.
 
-A custom `StatePort` used with external effects must give the same guarantees: `withLock` exposes only durable state; `save` resolves only once the state is durable; and a save that may have become visible without being durable rejects with `code: 'STATE_DURABILITY_UNCONFIRMED'` and `replaced: true`. Any other rejection must mean nothing was replaced.
+A custom `StatePort` used with external effects must give the same guarantees: `withLock` exposes only durable state (automatic completion recovery relies on it); `save` resolves only once the state is durable; and a save that may have become visible without being durable rejects with `code: 'STATE_DURABILITY_UNCONFIRMED'` and `replaced: true`. Any other rejection must mean nothing was replaced.
 
 **What the tests prove, and what they cannot.** The tests inject faults into each filesystem step, simulate power loss with a model in which a rename survives only after a later successful directory fsync, and kill real processes with `SIGKILL` at each persistence boundary. They do **not** prove what a given kernel, disk, controller cache, VM or network filesystem keeps after power loss. Known limits:
 

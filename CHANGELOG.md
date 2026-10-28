@@ -15,25 +15,30 @@ Reliability hardening of the offline wake and file store, following independent 
 - **Abandoned recovery claims (L2).** A claim left by a provably dead recoverer is recovered by the same exclusive procedure, up to two nested levels. Live or unprovable claims still fail closed.
 - **Audit retention (L3).** Reconciliation decisions (latest 100) and failed attempts (latest 20) are retained separately, so a verifier that keeps failing cannot evict a decision.
 - **Cancellation.** A signal aborted before a port call no longer invokes that port or leaks an unhandled rejection.
+- **Automatic completion recovery.** If the receipt record of a completed action is durable but the write that clears its block is lost, the next wake finalizes it from that receipt and returns `recovered`. It does not observe, decide, authorize or execute. It records the exact action id, receipt id and kind in `lastReceipt`, adds one `automatic: true` audit entry, and is idempotent across crashes and repeated wakes. Before, this state needed manual reconciliation. Every other unresolved action, and any completion record that a reconciliation already touched or that is malformed, still blocks until `resolvePendingAction`.
 
 ### Added
 
 - `resolvePendingAction({ identity, store, actionId, verify, resolvedBy })`, an explicit trusted-operator reconciliation. It resolves `confirmed` or `not-executed` only from the verifier's evidence about the exact action id, keeps an audit trail in `state.reconciliations`, and never re-executes.
 - `runWake({ signal })` cancels waiting on observe/decide/authorize. It is never honored once the reservation is persisted.
 - `WakeLockError`, `StateDurabilityError` (`unsupported`, `replaced`), `store.inspectLock()`, and the related TypeScript declarations (`WakeResult` variants, `PendingReason`, `ReconciliationRecord`).
+- `WakeResult` outcome `recovered` (`actionId`, `receiptId`, `kind`, `wakes`) and `ReconciliationRecord.automatic`.
 
 ### Documented
 
 - Exact guarantees and non-guarantees (at most one attempt per action id, never exactly-once), the durability contract for custom `StatePort`s, container PID-namespace behaviour (L1), and a manual lock recovery procedure.
+- Automatic completion recovery: its trust and durability assumptions and the cases that still need manual reconciliation.
 
 ### Compatibility
 
 - State stays at `version: 1`. v0.1.0 state and pending records load, block and can be reconciled. New optional fields (`reconciliations`, `pendingAction.reason/receipt/error`) pass the v0.1.0 validator, so a downgrade can still read them.
-- `WakeResult` gains the outcome `reservation_not_durable`, and `acted` may carry `durable: false`. `uncertain` gains `reason` (`execution_failed`, `receipt_invalid`, `completion_not_persisted`), `recorded`, and sometimes `receipt`. Exhaustive `switch`es and whole-object comparisons must update; code that only checks `acted`/`blocked` keeps working.
+- `WakeResult` gains the outcomes `reservation_not_durable` and `recovered`, and `acted` may carry `durable: false`. `uncertain` gains `reason` (`execution_failed`, `receipt_invalid`, `completion_not_persisted`), `recorded`, and sometimes `receipt`. Exhaustive `switch`es and whole-object comparisons must update; code that only checks `acted`/`blocked` keeps working.
 - Each action wake now performs one more fsynced write (the receipt record), and every `withLock` one directory fsync.
 - Lock contention still rejects with a message containing `already locked`, now as `WakeLockError`. A crash-leftover v0.1.0 `wake.lock` is **not** removed automatically; follow the manual recovery procedure.
 - On platforms without directory fsync (for example Windows), every `withLock` and `save` now **rejects**. Before, they reported success without that guarantee.
 - Automatic stale-lock recovery needs Linux `/proc` and the same PID namespace. After a container restart, or on other platforms, stale locks need manual removal.
+- A `completion_pending` record written by an earlier unreleased build is recovered by the first wake after upgrading. No migration is needed.
+- The reference installation imports only the module subpaths (`attention-core`, `thought-core`, `history-context`, `cognition-control`, `cognition-journey`, `action-outcomes`, `decision-dispatch`, `model-port`, `world-read-port`, `trusted-action-port`, `memory-continuity`, `policy-action`). None of them changed since v0.1.0, and it uses neither `runWake` nor `createFileStore`. Updating its pin therefore changes none of its behavior; its own suites pass unchanged against this branch.
 
 ## [0.1.0] — 2026-10-25
 
