@@ -13,8 +13,46 @@ export interface WakeState {
   agentId: string
   wakes: number
   lastOutcome: string | null
-  pendingAction: null | { id: string; status: 'pending' | 'uncertain'; kind?: string; at?: string }
+  pendingAction: null | PendingAction
   lastReceipt: null | { actionId: string; receiptId: string; kind: string }
+  /** Bounded (latest 100) audit trail written by resolvePendingAction. Absent in v0.1.0 state. */
+  reconciliations?: ReconciliationRecord[]
+}
+
+/** Why runWake returned `uncertain`. In every case the agent stays blocked on that action id. */
+export type UncertainReason = 'execution_failed' | 'receipt_invalid' | 'completion_not_persisted'
+
+/**
+ * Why a pending record is `uncertain`. `completion_pending`: the confirmed
+ * receipt is recorded (`receipt`) but the block was not durably cleared.
+ */
+export type PendingReason = 'execution_failed' | 'receipt_invalid' | 'completion_pending'
+
+export interface PendingAction {
+  id: string
+  /** `pending`: reserved, outcome unknown (possibly crashed). `uncertain`: outcome known to be unconfirmed. */
+  status: 'pending' | 'uncertain'
+  kind?: string
+  at?: string
+  reason?: PendingReason
+  /** The confirmed receipt, recorded before the block is cleared (two-phase completion). */
+  receipt?: { receiptId: string }
+  /** Bounded diagnostics only; never an exception message. */
+  error?: { name: string; code?: string }
+}
+
+export interface ReconciliationRecord {
+  actionId: string
+  kind: string | null
+  previousStatus: 'pending' | 'uncertain'
+  previousReason?: PendingReason
+  resolution: 'confirmed' | 'not-executed' | 'unresolved'
+  reason?: string
+  receiptId?: string
+  evidenceId?: string
+  error?: { name: string; code?: string }
+  resolvedBy: string
+  at: string
 }
 
 export type Observation = unknown
@@ -29,7 +67,7 @@ export interface StatePort {
 }
 
 export interface WorldPort {
-  observe(input: { identity: AgentIdentity; state: WakeState }): Promise<Observation> | Observation
+  observe(input: { identity: AgentIdentity; state: WakeState; signal?: AbortSignal }): Promise<Observation> | Observation
   execute?(input: {
     identity: AgentIdentity
     action: ActionProposal
@@ -41,6 +79,7 @@ export type CognitionPort = (input: {
   identity: AgentIdentity
   observation: Observation
   state: WakeState
+  signal?: AbortSignal
 }) => Promise<WakeDecision> | WakeDecision
 
 export type ActionPolicyPort = (input: {
@@ -48,6 +87,7 @@ export type ActionPolicyPort = (input: {
   action: ActionProposal
   observation: Observation
   state: WakeState
+  signal?: AbortSignal
 }) => Promise<boolean> | boolean
 
 /**
@@ -78,11 +118,48 @@ export interface WakePorts {
   authorize?: ActionPolicyPort
   now?: () => string
   actionId?: () => string
+  /**
+   * Cancels waiting on observe/decide/authorize. Never honored once the
+   * action reservation is persisted: an execution is never abandoned.
+   */
+  signal?: AbortSignal
 }
 
 export type WakeResult =
-  | { outcome: 'rest' | 'denied' | 'acted'; wakes: number; actionId?: string }
-  | { outcome: 'uncertain'; actionId: string }
+  | { outcome: 'rest' | 'denied'; wakes: number }
+  | {
+      outcome: 'acted'
+      actionId: string
+      wakes: number
+      /**
+       * Present only as `false`: the receipt IS durably recorded, but clearing
+       * the block was not confirmed durable. A later wake may report `blocked`
+       * for this id; resolve it with the receipt in `pendingAction.receipt`.
+       */
+      durable?: false
+    }
+  | {
+      /**
+       * The reservation was renamed into place but could not be confirmed
+       * durable. runWake did NOT call world.execute. The visible reservation
+       * blocks later wakes; after power loss it may be absent. It is never
+       * cleared automatically: resolve it as `not-executed`.
+       */
+      outcome: 'reservation_not_durable'
+      actionId: string
+    }
+  | {
+      outcome: 'uncertain'
+      actionId: string
+      reason: UncertainReason
+      /**
+       * Whether the uncertain record was confirmed durable. Either way the
+       * visible state blocks this action id (the reservation or the record).
+       */
+      recorded: boolean
+      /** Present for `completion_not_persisted`: the effect WAS confirmed. Keep it for reconciliation. */
+      receipt?: { actionId: string; receiptId: string; kind: string }
+    }
   | { outcome: 'blocked'; reason: 'unresolved_action'; actionId: string }
 
 export declare function assertAgentIdentity(identity: unknown): void

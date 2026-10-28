@@ -1,5 +1,7 @@
 import {
-  runWake, createFileStore,
+  runWake, createFileStore, resolvePendingAction,
+  type FileStatePort, type WakeLockDiagnostics, type ReconciliationResult, type ReconciliationVerdict,
+  type WakeLockError, type StateDurabilityError,
   type AgentIdentity, type WakePorts, type WakeResult,
   type WorldPort, type CognitionPort, type ActionPolicyPort,
 } from 'ginger-tail'
@@ -67,3 +69,29 @@ const route = createDecisionDispatcher<{action:string}>({
 const signal: Promise<DecisionFlow> = route({action:'rest'})
 void signal
 void typecheckOnly
+
+async function reliabilityTypecheckOnly(store: FileStatePort): Promise<void> {
+  const lock: WakeLockDiagnostics = await store.inspectLock()
+  const wake: WakeResult = await runWake({ identity: { id: 'synthetic-cat' }, store,
+    world: { observe: () => ({}) }, decide: () => ({ kind: 'rest' }), signal: AbortSignal.abort() })
+  if (wake.outcome === 'uncertain') {
+    const recorded: boolean = wake.recorded
+    const receiptId: string | undefined = wake.receipt?.receiptId
+    const reason: 'execution_failed' | 'receipt_invalid' | 'completion_not_persisted' = wake.reason
+    void [recorded, receiptId, reason]
+  } else if (wake.outcome === 'acted') {
+    const durable: false | undefined = wake.durable
+    const id: string = wake.actionId
+    void [durable, id]
+  } else if (wake.outcome === 'reservation_not_durable') {
+    const id: string = wake.actionId
+    void id
+  }
+  const resolved: ReconciliationResult = await resolvePendingAction({
+    identity: { id: 'synthetic-cat' }, store, actionId: 'action-1', resolvedBy: 'operator',
+    verify: ({ actionId }): ReconciliationVerdict => ({ status: 'not-executed', actionId, evidenceId: 'lookup' }),
+  })
+  const errors: [WakeLockError['code'], StateDurabilityError['unsupported']] = ['WAKE_LOCKED', true]
+  void [lock, resolved, errors]
+}
+void reliabilityTypecheckOnly

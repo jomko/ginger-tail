@@ -25,7 +25,7 @@ await runWake({
 | Port | Required | Contract |
 | --- | --- | --- |
 | `identity` | Yes | Object with stable `id` |
-| `store` | Yes | `withLock`, `load`, `save`; must fail closed on corrupt state |
+| `store` | Yes | `withLock`, `load`, `save`; must fail closed on corrupt state and meet the durability contract below |
 | `world.observe` | Yes | One bounded, JSON-serializable observation |
 | `decide` | Yes | One bounded rest or action proposal; **untrusted** |
 | `authorize` | No | Returns exactly `true` to approve; absent means **deny** |
@@ -44,19 +44,119 @@ An observation is limited to **16,384 bytes**; an action proposal to **4,096 byt
 ### Side-effect transaction
 
 ~~~text
-observe
-  -> decide
-  -> authorize (default deny)
-  -> persist reservation
+lock -> durability barrier -> load
+  -> observe -> decide -> authorize (default deny)
+  -> persist reservation (durable, or no execution)
   -> trusted execution
   -> confirmed receipt?
-       yes -> mark acted; clear pending
-       no  -> quarantine uncertain; block later wakes
+       no  -> record uncertain; block later wakes
+       yes -> phase 1: record the receipt durably, still blocking
+              phase 2: clear the block (acted)
+  -> release lock
 ~~~
 
-The confirmed receipt has `{ status: 'confirmed', receiptId: '...' }` with a valid bounded ID. Missing, malformed, failing or uncertain receipts **do not** count as success. No blind automatic retry is permitted. A pending action requires manual reconciliation.
+The confirmed receipt has `{ status: 'confirmed', receiptId: '...' }` with a valid bounded ID. Missing, malformed, failing or uncertain receipts **do not** count as success. No blind automatic retry is permitted. A pending action requires explicit reconciliation (below).
 
-`createFileStore` is single-host local storage. Do not treat it as a distributed transaction coordinator.
+**Why two phases.** A save can rename a new `state.json` into place and *then* fail its directory fsync. The new file is then visible, but it may not survive power loss. If one write both recorded the receipt and cleared the block, such a failure could leave a visible state that permits new actions while the wake reports failure. Two phases rule that out: a state that clears the block is only ever written after the receipt is durable.
+
+| Result | Meaning | State afterwards |
+| --- | --- | --- |
+| `acted` | Receipt durable, block cleared durably | Permits the next action |
+| `acted`, `durable: false` | Receipt durable; clearing the block not confirmed | Permits the next action, or stays blocked on this id with `pendingAction.receipt` |
+| `uncertain`, `execution_failed` | `world.execute` threw; the effect may have happened | Blocked on this id |
+| `uncertain`, `receipt_invalid` | No valid confirmed receipt | Blocked on this id |
+| `uncertain`, `completion_not_persisted` | The effect **was** confirmed (`receipt` in the result; keep it), but the receipt could not be recorded durably | Blocked on this id |
+| `reservation_not_durable` | The reservation became visible but its fsync failed. **`world.execute` was not called** | Blocked on this id; after power loss the reservation may be absent |
+| rejection | Failure before any reservation became visible (including the barrier) | Unchanged; nothing executed |
+
+For `uncertain`, `recorded` says whether the uncertain record was confirmed durable. Either way, the visible state blocks the action id: it is either the reservation or the uncertain record. `reservation_not_durable` is never cleared automatically, because the reservation may be durable. Resolve it as `not-executed`; the result itself is the host's evidence that `execute` was never entered. Pending records store only bounded diagnostics (`error.name`, `error.code`), never exception messages.
+
+`signal` (an `AbortSignal`) cancels waiting on `observe`, `decide` and `authorize`. Once aborted, those ports are not invoked. It is **not** honored after the reservation is persisted: Tail never abandons an execution in flight.
+
+### Guarantees and non-guarantees
+
+Within the single-host filesystem assumptions below, Tail guarantees:
+
+1. **At most one execution attempt per action id.** No code path calls `world.execute` again for an id.
+2. **No execution without a durable reservation.** `execute` runs only after the reservation's directory fsync succeeded.
+3. **An unresolved action stays blocking.** After a reservation is durable, every state Tail writes keeps the action blocked until a confirmed receipt is durable or `resolvePendingAction` records verified evidence. A failed write, a crash or a power loss can only expose an earlier state that still holds the reservation, or a later one that also blocks.
+4. **No decision on non-durable state.** `withLock` fsyncs the directory before the callback reads, so a wake never acts on a state that is merely visible after an earlier failed fsync.
+5. **No overlapping wakes** for one state directory on one host (see the lock section).
+
+It does **not** guarantee exactly-once external effects. An unconfirmed effect may have happened once, and only the external system knows. It also does not guarantee that an `acted, durable: false` agent stays unblocked after power loss, or that a verifier's `not-executed` is true.
+
+### Reconciling a pending action
+
+A `pending` or `uncertain` action blocks every later wake until a trusted host or operator resolves it. Tail never decides this on its own, never infers success or failure from missing state, and never retries the action.
+
+~~~js
+import { resolvePendingAction } from 'ginger-tail'
+
+const result = await resolvePendingAction({
+  identity, store,
+  actionId: blocked.actionId,         // exact id; any other id is rejected
+  resolvedBy: 'operator:alice',       // audit identity, not an authorization
+  verify: async ({ actionId }) => {   // trusted lookup in the external system
+    const found = await externalSystem.findByIdempotencyKey(actionId)
+    return found
+      ? { status: 'confirmed', actionId, receiptId: found.id }
+      : { status: 'not-executed', actionId, evidenceId: 'lookup-2026-10-28' }
+  },
+})
+// { outcome: 'resolved' | 'already-resolved' | 'unresolved', ... }
+~~~
+
+- The result comes **only** from `verify`'s evidence: `confirmed` needs a valid `receiptId`; `not-executed` needs an `evidenceId`. Both must echo the exact `actionId`. Anything else, including an authorization claim such as `{ authorized: true }` or a thrown error, gives `unresolved` and the block stays.
+- If the pending record holds a receipt (`reason: 'completion_pending'`), only a `confirmed` verdict with **that** `receiptId` resolves it, and `not-executed` is rejected as a conflict.
+- Return `not-executed` only when the external system guarantees that this action id can no longer take effect. A request still in flight that lands later would be a duplicate. Tail cannot detect that.
+- Every attempt is recorded in `state.reconciliations`. Decisions (`confirmed`, `not-executed`) and failed attempts (`unresolved`) are retained separately, the latest 100 and 20 respectively, so a verifier that keeps failing cannot evict a decision. A repeat call for a resolved id returns `already-resolved` without calling `verify`. Hosts needing a complete audit should also log every returned result.
+- If the resolution's own save is not confirmed durable, it throws `StateDurabilityError` (`replaced: true`). Call it again: the lock barrier first confirms or rejects the visible state, then the call reports `already-resolved` or resolves again.
+- It runs under the same wake lock, so it cannot interleave with a wake. Never expose it to a model.
+
+### File store: locking and durability
+
+`createFileStore` is single-host local storage. Do not treat it as a distributed transaction coordinator, and do not share one state directory between hosts or between containers that do not share a PID namespace.
+
+**Lock.** `wake.lock` is created atomically with `link(2)` from a fully written owner file (token, host, machine id, boot id, PID namespace, PID, process start time). The lock has no time-based lease, so a slow living process keeps it. An existing lock is removed automatically only when its owner is **provably** gone:
+
+| Evidence | Verdict |
+| --- | --- |
+| Same host, boot and PID namespace; PID no longer exists or is a zombie | stale, recovered |
+| Same host, boot and PID namespace; PID exists with a different start time (PID reuse) | stale, recovered |
+| Same host name and machine id, different boot id (the host rebooted) | stale, recovered |
+| PID exists with the same start time, or its start time cannot be read | live, refused |
+| Other host name, other PID namespace, other machine, non-Linux host, malformed or v0.1.0 lock file | uncertain, refused and left intact |
+
+Recovery takes an exclusive per-token claim (`wake.lock.recover-<token>`), then re-reads the token before deleting, so concurrent recoverers cannot delete a lock that was re-acquired in between. A claim is itself an owner record:
+
+- If its holder is **provably dead** (same rules as above), the claim is removed by the same procedure one level down (`…recover-<token>.recover-<claim token>`). This works up to two nested abandoned claims.
+- If the holder is alive, unprovable, or the nesting goes deeper, recovery fails closed with `recovery_in_progress` and nothing is removed.
+- A claim for a token that no longer matches `wake.lock` is inert and may be deleted at any time.
+
+A refused acquisition throws `WakeLockError` (`code: 'WAKE_LOCKED'`, message still contains `already locked`) with diagnostics in `error.lock`, including `claimOwner` for a blocking claim. `store.inspectLock()` reports the same diagnostics without changing anything. A recovered lock or claim emits a `GINGER_TAIL_STALE_LOCK` process warning.
+
+**Containers.** A restarted container gets a new PID namespace, so a lock left by the previous container is `uncertain` (`different_pid_namespace`) and is never removed automatically. Ownership across namespaces cannot be proven from inside one, and guessing could run two wakes at once. Either run the agent with a stable PID namespace (for example `--pid=host`), or recover by hand.
+
+**Manual lock recovery** (container restart, non-Linux host, v0.1.0 leftover lock, abandoned claim):
+
+1. Stop **every** process and container that can open this state directory, and confirm they are gone (`docker ps`, `ps`, the orchestrator).
+2. Run `store.inspectLock()` and note `reason`, `owner.pid`, `owner.hostname`, `owner.acquiredAt`. Confirm that this owner is among the processes stopped in step 1.
+3. With nothing running, delete `wake.lock` and every `wake.lock.recover-*` file in the state directory.
+4. Start one wake. If it reports `blocked`, reconcile that action with `resolvePendingAction` before anything else.
+
+**Durability.** `save` writes and fsyncs a `0600` temporary file, renames it over `state.json`, then fsyncs the directory. Newly created state directories are fsynced into their parents. On a failure *before* the rename, the temporary file is removed and `state.json` is unchanged. On a failure *after* the rename (directory fsync), the new state is already **visible** but not confirmed durable. Do not assume the previous file is still there. `save` then throws `StateDurabilityError` (`code: 'STATE_DURABILITY_UNCONFIRMED'`, `replaced: true`, `unsupported: true|false`).
+
+`withLock` fsyncs the directory after acquiring the lock and before its callback (the **durability barrier**). This confirms that what the callback reads is durable, and it makes a filesystem without directory fsync (for example on Windows) fail predictably before any observation, decision or effect. It throws `StateDurabilityError` with `replaced: false`. There is no silent downgrade.
+
+A custom `StatePort` used with external effects must give the same guarantees: `withLock` exposes only durable state; `save` resolves only once the state is durable; and a save that may have become visible without being durable rejects with `code: 'STATE_DURABILITY_UNCONFIRMED'` and `replaced: true`. Any other rejection must mean nothing was replaced.
+
+**What the tests prove, and what they cannot.** The tests inject faults into each filesystem step, simulate power loss with a model in which a rename survives only after a later successful directory fsync, and kill real processes with `SIGKILL` at each persistence boundary. They do **not** prove what a given kernel, disk, controller cache, VM or network filesystem keeps after power loss. Known limits:
+
+- macOS `fsync` does not flush the drive cache (`F_FULLFSYNC` is not available from Node).
+- After a failed fsync, Linux may report a later fsync as successful even though data was dropped. ext4 normally aborts its journal instead.
+- NFS, SMB and FUSE semantics for `link`, `rename` and fsync are unverified.
+
+Power-cut testing on the target hardware is still required.
 
 ## 2. Model, cognition, and journey
 
