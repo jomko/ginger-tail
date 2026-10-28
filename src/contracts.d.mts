@@ -15,7 +15,10 @@ export interface WakeState {
   lastOutcome: string | null
   pendingAction: null | PendingAction
   lastReceipt: null | { actionId: string; receiptId: string; kind: string }
-  /** Bounded (latest 100) audit trail written by resolvePendingAction. Absent in v0.1.0 state. */
+  /**
+   * Bounded audit trail written by resolvePendingAction and by automatic
+   * completion recovery (latest 100 decisions, 20 failed attempts). Absent in v0.1.0 state.
+   */
   reconciliations?: ReconciliationRecord[]
 }
 
@@ -24,7 +27,8 @@ export type UncertainReason = 'execution_failed' | 'receipt_invalid' | 'completi
 
 /**
  * Why a pending record is `uncertain`. `completion_pending`: the confirmed
- * receipt is recorded (`receipt`) but the block was not durably cleared.
+ * receipt is recorded (`receipt`) but the block was not durably cleared;
+ * the next wake finalizes it automatically (outcome `recovered`).
  */
 export type PendingReason = 'execution_failed' | 'receipt_invalid' | 'completion_pending'
 
@@ -51,6 +55,11 @@ export interface ReconciliationRecord {
   receiptId?: string
   evidenceId?: string
   error?: { name: string; code?: string }
+  /**
+   * Present only on entries written by automatic completion recovery, whose
+   * `resolvedBy` is then `ginger-tail:completion-recovery`.
+   */
+  automatic?: true
   resolvedBy: string
   at: string
 }
@@ -133,10 +142,23 @@ export type WakeResult =
       wakes: number
       /**
        * Present only as `false`: the receipt IS durably recorded, but clearing
-       * the block was not confirmed durable. A later wake may report `blocked`
-       * for this id; resolve it with the receipt in `pendingAction.receipt`.
+       * the block was not confirmed durable. If the clear is lost, the next
+       * wake finalizes it from that receipt and returns `recovered`.
        */
       durable?: false
+    }
+  | {
+      /**
+       * This wake found a durable `completion_pending` record and finalized
+       * that earlier action from its recorded trusted receipt. It did not
+       * observe, decide, authorize or call `world.execute`, and `wakes` is
+       * unchanged. The next wake runs normally.
+       */
+      outcome: 'recovered'
+      actionId: string
+      receiptId: string
+      kind: string
+      wakes: number
     }
   | {
       /**
