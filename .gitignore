@@ -34,3 +34,4 @@ __pycache__/
 
 # Synthetic offline example state
 .ginger-tail-demo-state/
+.ginger-tail-cat-state/
