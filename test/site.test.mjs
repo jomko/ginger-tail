@@ -33,7 +33,9 @@ test('the main three parts and two-wake explanation remain', () => {
   assert.match(page, /\.hero \.stage\{width:min\(100%,114svh,1360px\)/)
   assert.match(page, /--scene-dark:/)
   assert.match(page, /\.hero h1\{font-size:clamp\(52px/)
-  assert.match(page, /mask-image:linear-gradient\(to bottom/)
+  assert.doesNotMatch(page, /(?:-webkit-)?mask-(?:image|composite):/)
+  assert.match(page, /--hero-bg-0:#302b28;/)
+  assert.match(page, /--hero-bg-91:#887b73;/)
 })
 
 test('interactive controls and anchors are keyboard accessible and unambiguous', () => {
