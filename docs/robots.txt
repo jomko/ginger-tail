@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /ginger-tail/
+Sitemap: https://jomko.github.io/ginger-tail/sitemap.xml
